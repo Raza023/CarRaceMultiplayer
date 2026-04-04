@@ -591,8 +591,10 @@
                 steeringValue = -maxSteerVal;
             }
 
-            carVehicle.applyEngineForce(engineForce, 2);
-            carVehicle.applyEngineForce(engineForce, 3);
+            carVehicle.applyEngineForce(engineForce, 0); // Front Right
+            carVehicle.applyEngineForce(engineForce, 1); // Front Left
+            carVehicle.applyEngineForce(engineForce, 2); // Rear Right
+            carVehicle.applyEngineForce(engineForce, 3); // Rear Left
             carVehicle.setSteeringValue(steeringValue, 0);
             carVehicle.setSteeringValue(steeringValue, 1);
             carVehicle.setBrake(brakeValue, 0);
