@@ -239,12 +239,12 @@
             canvas.width = 512; canvas.height = 1024;
             const ctx = canvas.getContext('2d');
             
-            // Base grey asphalt
-            ctx.fillStyle = '#666'; ctx.fillRect(0,0,512,1024);
+            // Base light black asphalt
+            ctx.fillStyle = '#2b2b2b'; ctx.fillRect(0,0,512,1024);
             
             // Grain
             for(let i=0; i<10000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#555' : '#777';
+                ctx.fillStyle = Math.random() > 0.5 ? '#222' : '#333';
                 ctx.fillRect(Math.random()*512, Math.random()*1024, 2, 2);
             }
             
@@ -380,19 +380,7 @@
             const hemiLight = new THREE.HemisphereLight(0xffffff, 0x223322, 0.6);
             scene.add(hemiLight);
 
-            // Daytime sun casting shadows
-            const dirLight = new THREE.DirectionalLight(0xffffee, 2.0);
-            dirLight.position.set(-100, 300, -100);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 4096; // High quality shadows!
-            dirLight.shadow.mapSize.height = 4096;
-            dirLight.shadow.camera.near = 10;
-            dirLight.shadow.camera.far = 800;
-            dirLight.shadow.camera.left = -150;
-            dirLight.shadow.camera.right = 150;
-            dirLight.shadow.camera.top = 150;
-            dirLight.shadow.camera.bottom = -150;
-            scene.add(dirLight);
+            // Daytime sun casting shadows -> REMOVED SUN per user request
         }
 
         function initPhysics() {
@@ -477,12 +465,25 @@
             }
 
             for (let i = 0; i < segments; i++) {
+                const p0 = i === 0 ? points[segments - 1] : points[i - 1];
                 const p1 = points[i];
                 const p2 = points[i + 1];
+
+                const dx0 = p1.x - p0.x;
+                const dz0 = p1.z - p0.z;
+                const yaw0 = Math.atan2(dx0, dz0);
+
                 const dx = p2.x - p1.x;
                 const dz = p2.z - p1.z;
-                const dist = Math.sqrt(dx*dx + dz*dz);
+                const dist = Math.sqrt(dx*dx + dz*dz) || 1;
                 const yaw = Math.atan2(dx, dz);
+
+                let angleDiff = Math.abs(yaw - yaw0);
+                if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+                let localWidth = roadWidth + (angleDiff * 150);
+                if (localWidth > 55) localWidth = 55;
+
                 const midX = (p1.x + p2.x) / 2;
                 const midZ = (p1.z + p2.z) / 2;
 
@@ -492,7 +493,7 @@
                 }
 
                 // Smooth Road Segment
-                const roadGeo = new THREE.BoxGeometry(roadWidth, 0.2, dist + 1.5);
+                const roadGeo = new THREE.BoxGeometry(localWidth, 0.2, dist + 1.5);
                 const roadMesh = new THREE.Mesh(roadGeo, roadMat);
                 roadMesh.position.set(midX, 0.1, midZ);
                 roadMesh.rotation.y = yaw;
@@ -503,8 +504,8 @@
                 const nz = -Math.sin(yaw);
 
                 for (let side of [1, -1]) {
-                    const wallX = midX + nx * side * (roadWidth / 2 + 1);
-                    const wallZ = midZ + nz * side * (roadWidth / 2 + 1);
+                    const wallX = midX + nx * side * (localWidth / 2 + 1);
+                    const wallZ = midZ + nz * side * (localWidth / 2 + 1);
                     
                     const isNeon = i % 10 === 0;
                     const wGeo = new THREE.BoxGeometry(1.5, 3, dist + 1);
@@ -526,7 +527,7 @@
 
                     // Scenery Buildings (Cyberpunk style)
                     if (Math.random() < 0.15 && i % 3 === 0) {
-                        const offset = roadWidth / 2 + 15 + Math.random() * 30;
+                        const offset = localWidth / 2 + 15 + Math.random() * 30;
                         const objX = midX + nx * side * offset;
                         const objZ = midZ + nz * side * offset;
                         const h = 20 + Math.random()*40;
