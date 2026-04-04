@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realistic 3D Racing</title>
+    <title>Photorealistic 3D Racing</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
 
@@ -33,7 +33,7 @@
             left: 0;
             width: 100%;
             text-align: center;
-            text-shadow: 0 0 10px rgba(0, 255, 204, 0.8);
+            text-shadow: 0 0 15px rgba(255, 100, 50, 0.9);
             letter-spacing: 4px;
         }
 
@@ -41,7 +41,7 @@
             margin: 0;
             font-size: 32px;
             font-weight: 900;
-            background: linear-gradient(90deg, #00ffcc, #0088ff);
+            background: linear-gradient(90deg, #ff8800, #ff0055);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -51,13 +51,13 @@
             position: absolute;
             bottom: 40px;
             right: 40px;
-            background: rgba(10, 15, 30, 0.7);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 12px;
             padding: 20px 30px;
-            border: 1px solid rgba(0, 255, 204, 0.3);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 204, 0.1);
+            border: 1px solid rgba(255, 100, 50, 0.4);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(255, 100, 50, 0.15);
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -66,7 +66,7 @@
         #speedometer .label {
             font-size: 14px;
             font-weight: 700;
-            color: #88aadd;
+            color: #ffaa88;
             letter-spacing: 2px;
             margin-bottom: 5px;
         }
@@ -81,12 +81,12 @@
             color: #fff;
             font-size: 48px;
             font-weight: 900;
-            text-shadow: 0 0 15px rgba(0, 255, 204, 0.8);
+            text-shadow: 0 0 20px rgba(255, 100, 50, 0.8);
             font-variant-numeric: tabular-nums;
         }
 
         #speedometer .unit {
-            color: #00ffcc;
+            color: #ffaa88;
             font-size: 18px;
             font-weight: 700;
         }
@@ -95,16 +95,16 @@
             position: absolute;
             bottom: 40px;
             left: 40px;
-            background: rgba(10, 15, 30, 0.7);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 12px;
             padding: 20px 25px;
             color: #cbd5e1;
             font-size: 14px;
             line-height: 1.8;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
         }
 
         #controls-help strong {
@@ -122,38 +122,36 @@
             width: 200px;
             height: 200px;
             border-radius: 10px;
-            border: 2px solid rgba(0, 255, 204, 0.5);
-            background: rgba(0, 0, 0, 0.2);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 100, 50, 0.5);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.9);
         }
 
         #respawn-btn {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(10, 15, 30, 0.7);
+            background: rgba(40, 10, 10, 0.7);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            border-radius: 12px;
-            padding: 10px 20px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
             color: #fff;
-            font-family: 'Outfit', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            border: 1px solid rgba(255, 100, 100, 0.5);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 100, 100, 0.2);
+            border: 1px solid rgba(255, 50, 50, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 50, 50, 0.4);
             cursor: pointer;
             pointer-events: auto;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
         }
 
         #respawn-btn:hover {
-            background: rgba(255, 100, 100, 0.2);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 100, 100, 0.4);
-            transform: scale(1.05);
+            background: rgba(255, 50, 50, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 50, 50, 0.6);
+            transform: scale(1.1);
         }
         
         #respawn-btn:active {
@@ -164,14 +162,14 @@
 
 <body>
     <div id="ui">
-        <button id="respawn-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="respawn-btn" title="Respawn / Unflip Car">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
         </button>
         <div id="top-bar">
-            <h1>NEON HIGHWAY</h1>
+            <h1>OUTRUN HORIZON</h1>
         </div>
         <div id="minimap-container"></div>
         <div id="speedometer">
@@ -204,6 +202,69 @@
         // Input Map
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false };
 
+        // --- PROCEDURAL TEXTURES (FOR REALISM) ---
+        function createNoiseTexture(width, height, scale, intensity, colorA, colorB) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = colorA; ctx.fillRect(0,0,width,height);
+            for(let i=0; i<width*height * 0.1; i++) {
+                ctx.fillStyle = (Math.random() > 0.5) ? colorB : colorA;
+                ctx.fillRect(Math.random()*width, Math.random()*height, scale, scale);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        function createAsphaltNormalMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#8080ff'; // Default flat normal (Z-up in tangent space)
+            ctx.fillRect(0,0,512,512);
+            for(let i=0; i<30000; i++) {
+                const r = 128 + (Math.random() - 0.5) * 100;
+                const g = 128 + (Math.random() - 0.5) * 100;
+                ctx.fillStyle = `rgb(${r},${g},255)`;
+                ctx.fillRect(Math.random()*512, Math.random()*512, 1, 1);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        function createRoadColorMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            // Base dark asphalt
+            ctx.fillStyle = '#222'; ctx.fillRect(0,0,512,1024);
+            
+            // Grain
+            for(let i=0; i<10000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#1a1a1a' : '#2a2a2a';
+                ctx.fillRect(Math.random()*512, Math.random()*1024, 2, 2);
+            }
+            
+            // Yellow lines
+            ctx.fillStyle = '#ddaa00';
+            ctx.fillRect(240, 0, 10, 300);
+            ctx.fillRect(262, 0, 10, 300);
+            ctx.fillRect(240, 600, 10, 300);
+            ctx.fillRect(262, 600, 10, 300);
+
+            // White Edge lines
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(40, 0, 10, 1024);
+            ctx.fillRect(462, 0, 10, 1024);
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
         // --- INITIALIZATION ---
         function init() {
             initGraphics();
@@ -212,17 +273,15 @@
             createCar();
             setupControls();
 
-            // Resize handler
             window.addEventListener('resize', onWindowResize, false);
-
-            // Start Loop
             requestAnimationFrame(animate);
         }
 
         function initGraphics() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); // Sky blue
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.005);
+            // Sunset foggy atmosphere
+            scene.background = new THREE.Color(0xff6633); 
+            scene.fog = new THREE.FogExp2(0xff6633, 0.0035);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -233,52 +292,57 @@
             minimapCamera.lookAt(0, 0, 0);
             minimapCamera.layers.enable(1);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Very soft shadows
             
             // Photorealistic HDR Rendering
             renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
+            renderer.toneMappingExposure = 1.2;
             document.body.appendChild(renderer.domElement);
 
-            // Generate Procedural Sky Environment Map for metallic reflections
+            // Generate Procedural Sunset Environment Map for realistic metallic reflections
             const pmremGenerator = new THREE.PMREMGenerator(renderer);
             pmremGenerator.compileEquirectangularShader();
             
             const envCtx = document.createElement('canvas').getContext('2d');
-            envCtx.canvas.width = 1024;
-            envCtx.canvas.height = 512;
+            envCtx.canvas.width = 1024; envCtx.canvas.height = 512;
             const gradient = envCtx.createLinearGradient(0, 0, 0, 512);
-            gradient.addColorStop(0, '#001155'); // Deep sky blue
-            gradient.addColorStop(0.5, '#66aaff'); // Horizon glow
-            gradient.addColorStop(0.51, '#113311'); // Ground match
-            gradient.addColorStop(1, '#051105');
+            gradient.addColorStop(0, '#110033'); // Dark purple sky
+            gradient.addColorStop(0.45, '#ff3355'); // Fiery sunset
+            gradient.addColorStop(0.5, '#ffffaa'); // Bright horizon glow
+            gradient.addColorStop(0.51, '#111111'); // Dark Ground
             envCtx.fillStyle = gradient;
             envCtx.fillRect(0, 0, 1024, 512);
             
             const envTex = new THREE.CanvasTexture(envCtx.canvas);
             envTex.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = pmremGenerator.fromEquirectangular(envTex).texture;
-            envTex.dispose();
+            
+            // Create massive Skydome directly instead of scene.background for better gradient
+            const skyGeo = new THREE.SphereGeometry(900, 32, 32);
+            const skyMat = new THREE.MeshBasicMaterial({ map: envTex, side: THREE.BackSide, fog: false });
+            const skyDome = new THREE.Mesh(skyGeo, skyMat);
+            scene.add(skyDome);
 
-            // Lighting upgrade to HemisphereLight for softer natural sky bouncing
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+            // Realistic Lighting
+            const hemiLight = new THREE.HemisphereLight(0xffddaa, 0x111122, 0.4);
             scene.add(hemiLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffe0, 1.5);
-            dirLight.position.set(100, 200, 50);
+            // Low angle sun casting long dramatic shadows
+            const dirLight = new THREE.DirectionalLight(0xffcc88, 2.5);
+            dirLight.position.set(-150, 100, -200);
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
-            dirLight.shadow.camera.near = 0.5;
-            dirLight.shadow.camera.far = 500;
-            dirLight.shadow.camera.left = -50;
-            dirLight.shadow.camera.right = 50;
-            dirLight.shadow.camera.top = 50;
-            dirLight.shadow.camera.bottom = -50;
+            dirLight.shadow.mapSize.width = 4096; // High quality shadows!
+            dirLight.shadow.mapSize.height = 4096;
+            dirLight.shadow.camera.near = 10;
+            dirLight.shadow.camera.far = 800;
+            dirLight.shadow.camera.left = -150;
+            dirLight.shadow.camera.right = 150;
+            dirLight.shadow.camera.top = 150;
+            dirLight.shadow.camera.bottom = -150;
             scene.add(dirLight);
         }
 
@@ -291,75 +355,69 @@
             physicsMaterial = new CANNON.Material('standard');
             const wheelMaterial = new CANNON.Material('wheel');
             const contactMaterial = new CANNON.ContactMaterial(wheelMaterial, physicsMaterial, {
-                friction: 0.3,
-                restitution: 0.0,
+                friction: 0.8, // Improved grip
+                restitution: 0.1,
                 contactEquationStiffness: 1000,
             });
             world.addContactMaterial(contactMaterial);
         }
 
         function createEnvironment() {
+            // Invisible ground collider
             const groundShape = new CANNON.Plane();
             const groundBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
             groundBody.addShape(groundShape);
             groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
             world.addBody(groundBody);
 
-            // Procedural Grass Texture
-            const gCanvas = document.createElement('canvas');
-            gCanvas.width = 512; gCanvas.height = 512;
-            const gCtx = gCanvas.getContext('2d');
-            gCtx.fillStyle = '#1a330a'; gCtx.fillRect(0,0,512,512);
-            for(let i=0; i<15000; i++) {
-                gCtx.fillStyle = Math.random() > 0.5 ? '#1f3d0c' : '#142907';
-                gCtx.fillRect(Math.random()*512, Math.random()*512, 2+(Math.random()*2), 2+(Math.random()*2));
-            }
-            const gTex = new THREE.CanvasTexture(gCanvas);
-            gTex.wrapS = THREE.RepeatWrapping; gTex.wrapT = THREE.RepeatWrapping;
-            gTex.repeat.set(100, 100);
-
+            // Realistic Grass Ground
+            const gTex = createNoiseTexture(512, 512, 3, 0.5, '#0b1c04', '#152b0b');
+            gTex.repeat.set(150, 150);
+            
             const groundGeo = new THREE.PlaneGeometry(10000, 10000);
-            const groundMat = new THREE.MeshStandardMaterial({ map: gTex, roughness: 1.0 });
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: 0x222222, // Darken background to hide void
+                map: gTex, 
+                roughness: 0.9,
+                metalness: 0.1
+            });
             const groundMesh = new THREE.Mesh(groundGeo, groundMat);
             groundMesh.rotation.x = -Math.PI / 2;
             groundMesh.receiveShadow = true;
             scene.add(groundMesh);
 
             // Create Closed Loop Track
-            const roadWidth = 24;
+            const roadWidth = 26;
             const segments = 300;
-            const baseRadius = 250;
+            const baseRadius = 280;
+            
+            // PBR Road Materials
+            const roadColorTex = createRoadColorMap();
+            roadColorTex.repeat.set(1, 10); // Stretch along path
+            const roadNormalTex = createAsphaltNormalMap();
+            roadNormalTex.repeat.set(10, 40);
 
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 512, 512);
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(246, 0, 20, 256);
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(1, 4);
+            const roadMat = new THREE.MeshStandardMaterial({ 
+                map: roadColorTex,
+                normalMap: roadNormalTex,
+                roughness: 0.7,
+                metalness: 0.2 // Slightly reflective like asphalt at sunset
+            });
 
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x444444, map: tex, roughness: 0.9 });
+            // Realistic sci-fi concrete and metal barrier
+            const wallTex = createNoiseTexture(256, 256, 10, 0.5, '#444', '#555');
+            const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.6, metalness: 0.4 });
+            // Neon glowing markers
+            const neonMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+            
+            // Office/Sci-fi abstract building generation
+            const bGeo = new THREE.BoxGeometry(10, 40, 10);
+            const bTex = createNoiseTexture(128, 512, 16, 0.9, '#111', '#2244ff'); // Fake windows
+            bTex.repeat.set(2, 8);
+            const bMat = new THREE.MeshStandardMaterial({ map: bTex, roughness: 0.2, metalness: 0.8, emissive: 0x001133 });
+            
+            const physicsHouseShape = new CANNON.Box(new CANNON.Vec3(5, 20, 5));
 
-            // Assets for barriers and scenery
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.8 });
-            const neonMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-
-            const treeTrunkGeo = new THREE.CylinderGeometry(0.8, 0.8, 3);
-            const treeLeavesGeo = new THREE.ConeGeometry(4, 8, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-
-            const houseBaseGeo = new THREE.BoxGeometry(8, 5, 8);
-            const houseRoofGeo = new THREE.ConeGeometry(6, 4, 4);
-            houseRoofGeo.rotateY(Math.PI / 4);
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0xffeebb });
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b0000 });
-            const physicsHouseShape = new CANNON.Box(new CANNON.Vec3(4, 4.5, 4));
-            const physicsTreeShape = new CANNON.Box(new CANNON.Vec3(1.5, 5.5, 1.5));
-
-            // Generate Path Points
             const points = [];
             for (let i = 0; i <= segments; i++) {
                 const t = (i / segments) * Math.PI * 2;
@@ -372,21 +430,19 @@
             for (let i = 0; i < segments; i++) {
                 const p1 = points[i];
                 const p2 = points[i + 1];
-
                 const dx = p2.x - p1.x;
                 const dz = p2.z - p1.z;
-                const dist = Math.sqrt(dx * dx + dz * dz);
+                const dist = Math.sqrt(dx*dx + dz*dz);
                 const yaw = Math.atan2(dx, dz);
                 const midX = (p1.x + p2.x) / 2;
                 const midZ = (p1.z + p2.z) / 2;
 
-                // Save starting position
                 if (i === 0) {
                     window.trackStartPos = new THREE.Vector3(midX, 1, midZ);
                     window.trackStartYaw = yaw;
                 }
 
-                // Road Segment
+                // Smooth Road Segment
                 const roadGeo = new THREE.BoxGeometry(roadWidth, 0.2, dist + 1.5);
                 const roadMesh = new THREE.Mesh(roadGeo, roadMat);
                 roadMesh.position.set(midX, 0.1, midZ);
@@ -397,18 +453,17 @@
                 const nx = Math.cos(yaw);
                 const nz = -Math.sin(yaw);
 
-                // Build Boundaries and Scenery
                 for (let side of [1, -1]) {
-                    // Physical Barrier Walls
                     const wallX = midX + nx * side * (roadWidth / 2 + 1);
                     const wallZ = midZ + nz * side * (roadWidth / 2 + 1);
-
-                    const isNeon = i % 8 === 0;
+                    
+                    const isNeon = i % 10 === 0;
                     const wGeo = new THREE.BoxGeometry(1.5, 3, dist + 1);
                     const wMesh = new THREE.Mesh(wGeo, isNeon ? neonMat : wallMat);
                     wMesh.position.set(wallX, 1.5, wallZ);
                     wMesh.rotation.y = yaw;
                     wMesh.castShadow = true;
+                    wMesh.receiveShadow = true;
                     scene.add(wMesh);
 
                     const wallShape = new CANNON.Box(new CANNON.Vec3(0.75, 1.5, dist / 2 + 0.5));
@@ -420,123 +475,151 @@
                     wBody.quaternion.copy(q);
                     world.addBody(wBody);
 
-                    // Scenery Behind Walls
-                    if (i % 6 === 0) {
-                        const offset = roadWidth / 2 + 10 + Math.random() * 20;
+                    // Scenery Buildings (Cyberpunk style)
+                    if (Math.random() < 0.15 && i % 3 === 0) {
+                        const offset = roadWidth / 2 + 15 + Math.random() * 30;
                         const objX = midX + nx * side * offset;
                         const objZ = midZ + nz * side * offset;
+                        const h = 20 + Math.random()*40;
+                        
+                        const building = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random()*10, h, 10 + Math.random()*10), bMat);
+                        building.position.set(objX, h/2, objZ);
+                        building.rotation.y = Math.random() * Math.PI;
+                        building.castShadow = true;
+                        building.receiveShadow = true;
+                        scene.add(building);
 
-                        if (Math.random() > 0.4) {
-                            const trunk = new THREE.Mesh(treeTrunkGeo, trunkMat);
-                            trunk.position.set(objX, 1.5, objZ);
-                            trunk.castShadow = true;
-                            const leaves = new THREE.Mesh(treeLeavesGeo, leavesMat);
-                            leaves.position.set(objX, 6, objZ);
-                            leaves.castShadow = true;
-                            scene.add(trunk);
-                            scene.add(leaves);
-
-                            const tBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
-                            tBody.addShape(physicsTreeShape);
-                            tBody.position.set(objX, 5.5, objZ);
-                            world.addBody(tBody);
-                        } else {
-                            const base = new THREE.Mesh(houseBaseGeo, baseMat);
-                            base.position.set(objX, 2.5, objZ);
-                            base.castShadow = true;
-                            const roof = new THREE.Mesh(houseRoofGeo, roofMat);
-                            roof.position.set(objX, 7, objZ);
-                            roof.castShadow = true;
-                            scene.add(base);
-                            scene.add(roof);
-
-                            const hBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
-                            hBody.addShape(physicsHouseShape);
-                            hBody.position.set(objX, 4.5, objZ);
-                            world.addBody(hBody);
-                        }
+                        const hBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
+                        hBody.addShape(new CANNON.Box(new CANNON.Vec3(5, h/2, 5)));
+                        hBody.position.set(objX, h/2, objZ);
+                        world.addBody(hBody);
                     }
                 }
             }
         }
 
         function createCar() {
-            const chassisWidth = 1.8;
-            const chassisHeight = 0.6;
-            const chassisLength = 4;
+            const chassisWidth = 2.0;
+            const chassisHeight = 0.5;
+            const chassisLength = 4.4;
             const mass = 1500;
 
             // --- PHYSICS CHASSIS ---
             const chassisShape = new CANNON.Box(new CANNON.Vec3(chassisWidth * 0.5, chassisHeight * 0.5, chassisLength * 0.5));
             carChassisBody = new CANNON.Body({ mass: mass });
-            carChassisBody.addShape(chassisShape, new CANNON.Vec3(0, 0.5, 0)); // Offset center of mass
-            carChassisBody.position.copy(window.trackStartPos);
+            carChassisBody.addShape(chassisShape, new CANNON.Vec3(0, 0.4, 0)); // Offset center of mass
+            carChassisBody.position.copy(window.trackStartPos || new CANNON.Vec3(0,1,0));
             const initialQ = new CANNON.Quaternion();
-            initialQ.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), window.trackStartYaw);
+            initialQ.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), window.trackStartYaw || 0);
             carChassisBody.quaternion.copy(initialQ);
             carChassisBody.angularVelocity.set(0, 0, 0);
 
-            // --- VISUAL CHASSIS (Ferrari Style) ---
+            // --- PHOTOREALISTIC VISUAL CHASSIS (Supercar) ---
             carVisMesh = new THREE.Group();
-            const ferrariRed = 0xff2800;
-            const bodyMat = new THREE.MeshPhysicalMaterial({ color: ferrariRed, metalness: 0.6, roughness: 0.2, clearcoat: 1.0 });
-            const blackMat = new THREE.MeshPhysicalMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.5 });
-            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x050505, metalness: 0.9, roughness: 0.1, transmission: 0.5 });
+            
+            // Flake Normal map
+            const flakeMap = createNoiseTexture(256, 256, 2, 0.8, '#888', '#fff');
+            flakeMap.repeat.set(8, 8);
 
-            const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth, chassisHeight * 0.7, chassisLength), bodyMat);
-            lowerBody.position.set(0, 0.4, 0);
+            const paintColor = 0xff1100; // Ferrari/Lambo Red
+            
+            // PBR Materials
+            const bodyMat = new THREE.MeshPhysicalMaterial({ 
+                color: paintColor, 
+                metalness: 0.7, 
+                roughness: 0.3,
+                clearcoat: 1.0, 
+                clearcoatRoughness: 0.05,
+                normalMap: flakeMap, // Metallic speckle effect
+                normalScale: new THREE.Vector2(0.3, 0.3)
+            });
+            
+            const carbonFiberTex = createNoiseTexture(64, 64, 4, 1.0, '#333', '#111');
+            const carbonMat = new THREE.MeshStandardMaterial({ map: carbonFiberTex, roughness: 0.7, metalness: 0.3 });
+            
+            const glassMat = new THREE.MeshPhysicalMaterial({ 
+                color: 0x010101, 
+                metalness: 0.9, 
+                roughness: 0.1, 
+                transmission: 0.2, // Dark tinted glass
+                transparent: true
+            });
+
+            // Geometry composition (Lamborghini/Cyberpunk Wedge shape)
+            
+            // Main wide lower body
+            const lowerBodyGeo = new THREE.BoxGeometry(chassisWidth, chassisHeight * 0.6, chassisLength);
+            const lowerBody = new THREE.Mesh(lowerBodyGeo, bodyMat);
+            lowerBody.position.set(0, 0.3, 0);
             lowerBody.castShadow = true;
+            lowerBody.receiveShadow = true;
             carVisMesh.add(lowerBody);
 
-            const nose = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth, chassisHeight * 0.5, chassisLength * 0.3), bodyMat);
-            nose.position.set(0, 0.25, chassisLength * 0.35);
-            nose.rotation.x = 0.15;
-            nose.castShadow = true;
-            carVisMesh.add(nose);
+            // Sleek slanted hood
+            const hoodGeo = new THREE.BoxGeometry(chassisWidth*0.95, 0.3, chassisLength * 0.4);
+            const hood = new THREE.Mesh(hoodGeo, bodyMat);
+            hood.position.set(0, 0.45, chassisLength * 0.3);
+            hood.rotation.x = 0.2; // slant down
+            hood.castShadow = true;
+            carVisMesh.add(hood);
 
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth * 0.75, 0.45, chassisLength * 0.45), glassMat);
-            cabin.position.set(0, 0.4 + chassisHeight * 0.35 + 0.15, -0.1);
+            // Glass Cabin (Slanted windshield)
+            const cabinGeo = new THREE.BoxGeometry(chassisWidth * 0.75, 0.5, chassisLength * 0.45);
+            const cabin = new THREE.Mesh(cabinGeo, glassMat);
+            cabin.position.set(0, 0.7, -0.1);
+            cabin.rotation.x = 0.1;
             cabin.castShadow = true;
             carVisMesh.add(cabin);
+            
+            // Roof
+            const roofGeo = new THREE.BoxGeometry(chassisWidth * 0.76, 0.05, chassisLength * 0.3);
+            const roof = new THREE.Mesh(roofGeo, carbonMat);
+            roof.position.set(0, 0.95, -0.15);
+            carVisMesh.add(roof);
 
-            const spoilerPillarGeo = new THREE.BoxGeometry(0.1, 0.35, 0.2);
+            // Carbon Fiber Side Skirts
+            const skirtGeo = new THREE.BoxGeometry(0.1, 0.15, chassisLength * 0.9);
+            const skirtL = new THREE.Mesh(skirtGeo, carbonMat);
+            skirtL.position.set(-chassisWidth/2 - 0.05, 0.15, 0);
+            const skirtR = new THREE.Mesh(skirtGeo, carbonMat);
+            skirtR.position.set(chassisWidth/2 + 0.05, 0.15, 0);
+            carVisMesh.add(skirtL); carVisMesh.add(skirtR);
+
+            // Massive Rear carbon Spoiler
+            const spoilerPillarGeo = new THREE.BoxGeometry(0.05, 0.4, 0.2);
             const pillarL = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarL.position.set(-chassisWidth / 2 + 0.1, 0.75, -chassisLength / 2 + 0.15);
+            pillarL.position.set(-chassisWidth/2 + 0.1, 0.7, -chassisLength/2 + 0.1);
             const pillarR = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarR.position.set(chassisWidth / 2 - 0.1, 0.75, -chassisLength / 2 + 0.15);
-            const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth, 0.05, 0.4), bodyMat);
-            spoilerWing.position.set(0, 0.9, -chassisLength / 2 + 0.15);
+            pillarR.position.set(chassisWidth/2 - 0.1, 0.7, -chassisLength/2 + 0.1);
+            const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth + 0.2, 0.05, 0.5), carbonMat);
+            spoilerWing.position.set(0, 0.9, -chassisLength/2 + 0.05);
+            spoilerWing.rotation.x = -0.1; // downforce angle
             spoilerWing.castShadow = true;
-            carVisMesh.add(pillarL);
-            carVisMesh.add(pillarR);
-            carVisMesh.add(spoilerWing);
-
-            const tlGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16);
-            tlGeo.rotateX(Math.PI / 2);
+            carVisMesh.add(pillarL); carVisMesh.add(pillarR); carVisMesh.add(spoilerWing);
+            
+            // High detail LED Lights
+            const tlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.05);
             const tlMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            for (let i of [-1, 1]) {
-                for (let j of [0.4, 0.7]) {
-                    const tailLight = new THREE.Mesh(tlGeo, tlMat);
-                    tailLight.position.set(i * j, 0.45, -chassisLength / 2 - 0.05);
-                    carVisMesh.add(tailLight);
-                }
+            for(let i of [-1, 1]) {
+                const tailLight = new THREE.Mesh(tlGeo, tlMat);
+                tailLight.position.set(i * 0.6, 0.5, -chassisLength/2 - 0.01);
+                carVisMesh.add(tailLight);
             }
 
-            const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.1);
-            const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
-            const leftHeadlight = new THREE.Mesh(hlGeo, hlMat);
-            leftHeadlight.position.set(-chassisWidth / 2 + 0.35, 0.35, chassisLength / 2 + 0.05);
-            const rightHeadlight = new THREE.Mesh(hlGeo, hlMat);
-            rightHeadlight.position.set(chassisWidth / 2 - 0.35, 0.35, chassisLength / 2 + 0.05);
-            carVisMesh.add(leftHeadlight);
-            carVisMesh.add(rightHeadlight);
+            const hlGeo = new THREE.BoxGeometry(0.4, 0.05, 0.2);
+            const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Bright white LEDs
+            for(let i of [-1, 1]) {
+                const hdLight = new THREE.Mesh(hlGeo, hlMat);
+                hdLight.position.set(i * (chassisWidth/2 - 0.3), 0.5, chassisLength/2 + 0.05);
+                carVisMesh.add(hdLight);
+            }
 
-            // Minimap Arrow Marker (Only visible to minimap camera on Layer 1)
+            // Minimap Arrow Marker (Only visible on Layer 1)
             const arrowGeo = new THREE.ConeGeometry(5, 12, 3);
-            arrowGeo.rotateX(Math.PI / 2); // Point forward (+Z)
-            const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0044 }); // highly visible red/pink
+            arrowGeo.rotateX(Math.PI / 2); 
+            const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 }); 
             const minimapArrow = new THREE.Mesh(arrowGeo, arrowMat);
-            minimapArrow.position.set(0, 20, 0); // Render high above 
+            minimapArrow.position.set(0, 20, 0); 
             minimapArrow.layers.set(1);
             carVisMesh.add(minimapArrow);
 
@@ -551,11 +634,11 @@
             });
 
             const wheelOptions = {
-                radius: 0.4,
+                radius: 0.45,
                 directionLocal: new CANNON.Vec3(0, -1, 0),
-                suspensionStiffness: 30,
-                suspensionRestLength: 0.3,
-                frictionSlip: 5,
+                suspensionStiffness: 40,
+                suspensionRestLength: 0.35,
+                frictionSlip: 6, // Great grip
                 dampingRelaxation: 2.3,
                 dampingCompression: 4.4,
                 maxSuspensionForce: 100000,
@@ -567,35 +650,66 @@
                 useCustomSlidingRotationalSpeed: true
             };
 
-            wheelOptions.chassisConnectionPointLocal.set(-1, 0.5, 1.2);
+            const wX = chassisWidth/2 + 0.05;
+            const wZ = chassisLength/2 - 0.7;
+            wheelOptions.chassisConnectionPointLocal.set(-wX, 0.5, wZ);
             carVehicle.addWheel(wheelOptions);
-            wheelOptions.chassisConnectionPointLocal.set(1, 0.5, 1.2);
+            wheelOptions.chassisConnectionPointLocal.set(wX, 0.5, wZ);
             carVehicle.addWheel(wheelOptions);
-            wheelOptions.chassisConnectionPointLocal.set(-1, 0.5, -1.2);
+            wheelOptions.chassisConnectionPointLocal.set(-wX, 0.5, -wZ);
             carVehicle.addWheel(wheelOptions);
-            wheelOptions.chassisConnectionPointLocal.set(1, 0.5, -1.2);
+            wheelOptions.chassisConnectionPointLocal.set(wX, 0.5, -wZ);
             carVehicle.addWheel(wheelOptions);
 
             carVehicle.addToWorld(world);
 
+            // Realistic Tires Generation
             const wheelBodies = [];
-            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 24);
+            const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 32);
             wheelGeo.rotateZ(Math.PI / 2);
+            
+            // Draw a realistic rim with canvas
             const wCanvas = document.createElement('canvas');
-            wCanvas.width = 128; wCanvas.height = 128;
+            wCanvas.width = 256; wCanvas.height = 256;
             const wCtx = wCanvas.getContext('2d');
-            wCtx.fillStyle = '#111'; wCtx.fillRect(0, 0, 128, 128);
-            wCtx.fillStyle = '#333';
-            for (let i = 0; i < 128; i += 8) wCtx.fillRect(i, 0, 4, 128);
+            wCtx.fillStyle = '#111'; // Rubber
+            wCtx.fillRect(0, 0, 256, 256);
+            
+            // metallic rim circles
+            wCtx.beginPath();
+            wCtx.arc(128, 128, 80, 0, Math.PI*2);
+            wCtx.fillStyle = '#666'; // rim color
+            wCtx.fill();
+            
+            wCtx.beginPath();
+            wCtx.arc(128, 128, 20, 0, Math.PI*2);
+            wCtx.fillStyle = '#aaa'; // center cap
+            wCtx.fill();
+            
+            // spoke star
+            for(let i=0; i<5; i++) {
+                wCtx.save();
+                wCtx.translate(128, 128);
+                wCtx.rotate((Math.PI*2/5) * i);
+                wCtx.fillStyle = '#444';
+                wCtx.fillRect(-5, 20, 10, 60);
+                wCtx.restore();
+            }
+            
             const wTex = new THREE.CanvasTexture(wCanvas);
 
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, map: wTex });
+            const wheelMat = new THREE.MeshStandardMaterial({ 
+                color: 0x333333, 
+                roughness: 0.8, 
+                metalness: 0.5, // slightly reflective rims
+                map: wTex 
+            });
 
             carVehicle.wheelInfos.forEach((wheel) => {
                 const wheelObj = new CANNON.Body({ mass: 1, type: CANNON.Body.KINEMATIC, collisionFilterGroup: 0 });
                 const q = new CANNON.Quaternion();
                 q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-                const wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, 0.3, 20);
+                const wheelShape = new CANNON.Cylinder(wheel.radius, wheel.radius, 0.35, 20);
                 wheelObj.addShape(wheelShape, new CANNON.Vec3(), q);
                 wheelBodies.push(wheelObj);
                 world.addBody(wheelObj);
@@ -661,8 +775,8 @@
             lastTime = now;
 
             const maxSteerVal = 0.5;
-            const maxForce = 3000; // Increased for much faster speed
-            const brakeForce = 50;
+            const maxForce = 5000; // Ridiculous supercar speeds
+            const brakeForce = 100; // Stronger drift brake
 
             let engineForce = 0;
             let brakeValue = 0;
@@ -695,15 +809,14 @@
             carVehicle.setBrake(brakeValue, 2);
             carVehicle.setBrake(brakeValue, 3);
 
-            world.step(fixedTimeStep, dt, maxSubSteps);
+            world.step(fixedTimeStep, Math.min(dt, 0.1), maxSubSteps); // prevent physics blowout if tab pauses
 
             carVisMesh.position.copy(carChassisBody.position);
             carVisMesh.quaternion.copy(carChassisBody.quaternion);
 
             const relativeCameraOffset = new THREE.Vector3(0, 3, -8);
             const cameraOffset = relativeCameraOffset.applyMatrix4(carVisMesh.matrixWorld);
-            // Delta-time scaled smoothing eliminates jitter/lag
-            const lerpFactor = 1.0 - Math.exp(-10 * dt);
+            const lerpFactor = 1.0 - Math.exp(-12 * dt);
             camera.position.lerp(cameraOffset, lerpFactor);
 
             const lookAtPos = carVisMesh.position.clone().add(new THREE.Vector3(0, 1, 0));
@@ -719,18 +832,17 @@
             const direction = carChassisBody.velocity.dot(forwardVec) > 0 ? 1 : -1;
             uiSpeedValue.innerText = Math.round(speed * direction);
 
+            // Dual Pass Rendering (Main + Minimap)
             renderer.setScissorTest(true);
 
             renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
             renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x87CEEB);
             renderer.render(scene, camera);
 
             const minimapSize = 200;
             const margin = 20;
             renderer.setViewport(window.innerWidth - minimapSize - margin, window.innerHeight - minimapSize - margin, minimapSize, minimapSize);
             renderer.setScissor(window.innerWidth - minimapSize - margin, window.innerHeight - minimapSize - margin, minimapSize, minimapSize);
-            renderer.setClearColor(0x112211);
             renderer.render(scene, minimapCamera);
 
             renderer.setScissorTest(false);
