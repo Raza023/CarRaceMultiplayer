@@ -237,11 +237,36 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Photorealistic HDR Rendering
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
             document.body.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+            // Generate Procedural Sky Environment Map for metallic reflections
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            pmremGenerator.compileEquirectangularShader();
+            
+            const envCtx = document.createElement('canvas').getContext('2d');
+            envCtx.canvas.width = 1024;
+            envCtx.canvas.height = 512;
+            const gradient = envCtx.createLinearGradient(0, 0, 0, 512);
+            gradient.addColorStop(0, '#001155'); // Deep sky blue
+            gradient.addColorStop(0.5, '#66aaff'); // Horizon glow
+            gradient.addColorStop(0.51, '#113311'); // Ground match
+            gradient.addColorStop(1, '#051105');
+            envCtx.fillStyle = gradient;
+            envCtx.fillRect(0, 0, 1024, 512);
+            
+            const envTex = new THREE.CanvasTexture(envCtx.canvas);
+            envTex.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = pmremGenerator.fromEquirectangular(envTex).texture;
+            envTex.dispose();
+
+            // Lighting upgrade to HemisphereLight for softer natural sky bouncing
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+            scene.add(hemiLight);
 
             const dirLight = new THREE.DirectionalLight(0xffffe0, 1.5);
             dirLight.position.set(100, 200, 50);
@@ -280,8 +305,21 @@
             groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
             world.addBody(groundBody);
 
+            // Procedural Grass Texture
+            const gCanvas = document.createElement('canvas');
+            gCanvas.width = 512; gCanvas.height = 512;
+            const gCtx = gCanvas.getContext('2d');
+            gCtx.fillStyle = '#1a330a'; gCtx.fillRect(0,0,512,512);
+            for(let i=0; i<15000; i++) {
+                gCtx.fillStyle = Math.random() > 0.5 ? '#1f3d0c' : '#142907';
+                gCtx.fillRect(Math.random()*512, Math.random()*512, 2+(Math.random()*2), 2+(Math.random()*2));
+            }
+            const gTex = new THREE.CanvasTexture(gCanvas);
+            gTex.wrapS = THREE.RepeatWrapping; gTex.wrapT = THREE.RepeatWrapping;
+            gTex.repeat.set(100, 100);
+
             const groundGeo = new THREE.PlaneGeometry(10000, 10000);
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1f3d0c, roughness: 1.0 });
+            const groundMat = new THREE.MeshStandardMaterial({ map: gTex, roughness: 1.0 });
             const groundMesh = new THREE.Mesh(groundGeo, groundMat);
             groundMesh.rotation.x = -Math.PI / 2;
             groundMesh.receiveShadow = true;
