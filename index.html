@@ -239,12 +239,12 @@
             canvas.width = 512; canvas.height = 1024;
             const ctx = canvas.getContext('2d');
             
-            // Base dark asphalt
-            ctx.fillStyle = '#222'; ctx.fillRect(0,0,512,1024);
+            // Base grey asphalt
+            ctx.fillStyle = '#666'; ctx.fillRect(0,0,512,1024);
             
             // Grain
             for(let i=0; i<10000; i++) {
-                ctx.fillStyle = Math.random() > 0.5 ? '#1a1a1a' : '#2a2a2a';
+                ctx.fillStyle = Math.random() > 0.5 ? '#555' : '#777';
                 ctx.fillRect(Math.random()*512, Math.random()*1024, 2, 2);
             }
             
@@ -272,16 +272,52 @@
             createEnvironment();
             createCar();
             setupControls();
+            initWeather();
 
             window.addEventListener('resize', onWindowResize, false);
             requestAnimationFrame(animate);
         }
 
+        let rainSystem;
+        let isRaining = false;
+        
+        function initWeather() {
+            const rainCount = 5000;
+            const rainGeo = new THREE.BufferGeometry();
+            const rainDropPos = new Float32Array(rainCount * 3);
+            for(let i=0; i<rainCount*3; i++) {
+                rainDropPos[i] = (Math.random() - 0.5) * 600; // x, z spread
+            }
+            // Explicitly set Y heights (index 1, 4, 7...) 
+            for(let i=1; i<rainCount*3; i+=3) {
+                rainDropPos[i] = Math.random() * 400; // y spread
+            }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainDropPos, 3));
+            
+            const rainMat = new THREE.PointsMaterial({
+                color: 0xccddff,
+                size: 0.8,
+                transparent: true,
+                opacity: 0.6
+            });
+            rainSystem = new THREE.Points(rainGeo, rainMat);
+            scene.add(rainSystem);
+            
+            isRaining = Math.random() < 0.2; // 20% chance of rain on start
+            rainSystem.visible = isRaining;
+            
+            // Randomly toggle weather every 30 seconds
+            setInterval(() => {
+                isRaining = Math.random() < 0.2;
+                rainSystem.visible = isRaining;
+            }, 30000);
+        }
+
         function initGraphics() {
             scene = new THREE.Scene();
-            // Sunset foggy atmosphere
-            scene.background = new THREE.Color(0xff6633); 
-            scene.fog = new THREE.FogExp2(0xff6633, 0.0035);
+            // Daylight foggy atmosphere
+            scene.background = new THREE.Color(0xaaccff); 
+            scene.fog = new THREE.FogExp2(0xaaccff, 0.003);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -310,12 +346,25 @@
             const envCtx = document.createElement('canvas').getContext('2d');
             envCtx.canvas.width = 1024; envCtx.canvas.height = 512;
             const gradient = envCtx.createLinearGradient(0, 0, 0, 512);
-            gradient.addColorStop(0, '#110033'); // Dark purple sky
-            gradient.addColorStop(0.45, '#ff3355'); // Fiery sunset
-            gradient.addColorStop(0.5, '#ffffaa'); // Bright horizon glow
-            gradient.addColorStop(0.51, '#111111'); // Dark Ground
+            gradient.addColorStop(0, '#2266aa'); // Deep blue sky
+            gradient.addColorStop(0.45, '#88ccff'); // Lighter horizon
+            gradient.addColorStop(0.5, '#ddf0ff'); // Horizon mist
+            gradient.addColorStop(0.51, '#112211'); // Dark Ground
             envCtx.fillStyle = gradient;
             envCtx.fillRect(0, 0, 1024, 512);
+            
+            // Draw clouds
+            envCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            for(let i=0; i<40; i++) {
+                const cx = Math.random() * 1024;
+                const cy = Math.random() * 200; 
+                const size = 30 + Math.random() * 60;
+                envCtx.beginPath();
+                envCtx.arc(cx, cy, size, 0, Math.PI*2);
+                envCtx.arc(cx+size*0.8, cy-size*0.2, size*0.8, 0, Math.PI*2);
+                envCtx.arc(cx+size*1.2, cy+size*0.1, size*0.6, 0, Math.PI*2);
+                envCtx.fill();
+            }
             
             const envTex = new THREE.CanvasTexture(envCtx.canvas);
             envTex.mapping = THREE.EquirectangularReflectionMapping;
@@ -328,12 +377,12 @@
             scene.add(skyDome);
 
             // Realistic Lighting
-            const hemiLight = new THREE.HemisphereLight(0xffddaa, 0x111122, 0.4);
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x223322, 0.6);
             scene.add(hemiLight);
 
-            // Low angle sun casting long dramatic shadows
-            const dirLight = new THREE.DirectionalLight(0xffcc88, 2.5);
-            dirLight.position.set(-150, 100, -200);
+            // Daytime sun casting shadows
+            const dirLight = new THREE.DirectionalLight(0xffffee, 2.0);
+            dirLight.position.set(-100, 300, -100);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 4096; // High quality shadows!
             dirLight.shadow.mapSize.height = 4096;
@@ -810,6 +859,19 @@
             carVehicle.setBrake(brakeValue, 3);
 
             world.step(fixedTimeStep, Math.min(dt, 0.1), maxSubSteps); // prevent physics blowout if tab pauses
+
+            if (isRaining && rainSystem) {
+                const positions = rainSystem.geometry.attributes.position.array;
+                for(let i=1; i<positions.length; i+=3) {
+                    positions[i] -= 200 * dt; // Fall downward
+                    if(positions[i] < 0) { // reset to top
+                        positions[i] = 400;
+                        positions[i-1] = carVisMesh.position.x + (Math.random() - 0.5) * 600; 
+                        positions[i+1] = carVisMesh.position.z + (Math.random() - 0.5) * 600;
+                    }
+                }
+                rainSystem.geometry.attributes.position.needsUpdate = true;
+            }
 
             carVisMesh.position.copy(carChassisBody.position);
             carVisMesh.quaternion.copy(carChassisBody.quaternion);
