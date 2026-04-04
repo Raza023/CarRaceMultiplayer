@@ -126,11 +126,50 @@
             background: rgba(0, 0, 0, 0.2);
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
         }
+
+        #respawn-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 15, 30, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 12px;
+            padding: 10px 20px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 100, 100, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 100, 100, 0.2);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #respawn-btn:hover {
+            background: rgba(255, 100, 100, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 100, 100, 0.4);
+            transform: scale(1.05);
+        }
+        
+        #respawn-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 
 <body>
     <div id="ui">
+        <button id="respawn-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+        </button>
         <div id="top-bar">
             <h1>NEON HIGHWAY</h1>
         </div>
@@ -548,6 +587,22 @@
             });
             window.addEventListener('keyup', (e) => {
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+            });
+            
+            document.getElementById('respawn-btn').addEventListener('click', () => {
+                if(!carChassisBody) return;
+                const currentPos = carChassisBody.position;
+                carChassisBody.position.set(currentPos.x, 3, currentPos.z);
+                
+                const euler = new THREE.Euler().setFromQuaternion(
+                    new THREE.Quaternion(carChassisBody.quaternion.x, carChassisBody.quaternion.y, carChassisBody.quaternion.z, carChassisBody.quaternion.w)
+                );
+                const q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), euler.y);
+                carChassisBody.quaternion.copy(q);
+                
+                carChassisBody.velocity.set(0, 0, 0);
+                carChassisBody.angularVelocity.set(0, 0, 0);
             });
         }
 
