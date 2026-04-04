@@ -123,7 +123,7 @@
             height: 200px;
             border-radius: 10px;
             border: 2px solid rgba(0, 255, 204, 0.5);
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
         }
     </style>
@@ -252,11 +252,11 @@
             const roadWidth = 24;
             const segments = 300;
             const baseRadius = 250;
-            
+
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#333'; ctx.fillRect(0,0,512,512);
+            ctx.fillStyle = '#333'; ctx.fillRect(0, 0, 512, 512);
             ctx.fillStyle = '#fff';
             ctx.fillRect(246, 0, 20, 256);
             const tex = new THREE.CanvasTexture(canvas);
@@ -268,7 +268,7 @@
             // Assets for barriers and scenery
             const wallMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.8 });
             const neonMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-            
+
             const treeTrunkGeo = new THREE.CylinderGeometry(0.8, 0.8, 3);
             const treeLeavesGeo = new THREE.ConeGeometry(4, 8, 8);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
@@ -276,7 +276,7 @@
 
             const houseBaseGeo = new THREE.BoxGeometry(8, 5, 8);
             const houseRoofGeo = new THREE.ConeGeometry(6, 4, 4);
-            houseRoofGeo.rotateY(Math.PI/4);
+            houseRoofGeo.rotateY(Math.PI / 4);
             const baseMat = new THREE.MeshStandardMaterial({ color: 0xffeebb });
             const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b0000 });
             const physicsHouseShape = new CANNON.Box(new CANNON.Vec3(4, 4.5, 4));
@@ -295,10 +295,10 @@
             for (let i = 0; i < segments; i++) {
                 const p1 = points[i];
                 const p2 = points[i + 1];
-                
+
                 const dx = p2.x - p1.x;
                 const dz = p2.z - p1.z;
-                const dist = Math.sqrt(dx*dx + dz*dz);
+                const dist = Math.sqrt(dx * dx + dz * dz);
                 const yaw = Math.atan2(dx, dz);
                 const midX = (p1.x + p2.x) / 2;
                 const midZ = (p1.z + p2.z) / 2;
@@ -325,7 +325,7 @@
                     // Physical Barrier Walls
                     const wallX = midX + nx * side * (roadWidth / 2 + 1);
                     const wallZ = midZ + nz * side * (roadWidth / 2 + 1);
-                    
+
                     const isNeon = i % 8 === 0;
                     const wGeo = new THREE.BoxGeometry(1.5, 3, dist + 1);
                     const wMesh = new THREE.Mesh(wGeo, isNeon ? neonMat : wallMat);
@@ -361,7 +361,7 @@
 
                             const tBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
                             tBody.addShape(physicsTreeShape);
-                            tBody.position.set(objX, 5.5, objZ); 
+                            tBody.position.set(objX, 5.5, objZ);
                             world.addBody(tBody);
                         } else {
                             const base = new THREE.Mesh(houseBaseGeo, baseMat);
@@ -418,29 +418,29 @@
             carVisMesh.add(nose);
 
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth * 0.75, 0.45, chassisLength * 0.45), glassMat);
-            cabin.position.set(0, 0.4 + chassisHeight*0.35 + 0.15, -0.1);
+            cabin.position.set(0, 0.4 + chassisHeight * 0.35 + 0.15, -0.1);
             cabin.castShadow = true;
             carVisMesh.add(cabin);
 
             const spoilerPillarGeo = new THREE.BoxGeometry(0.1, 0.35, 0.2);
             const pillarL = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarL.position.set(-chassisWidth/2 + 0.1, 0.75, -chassisLength/2 + 0.15);
+            pillarL.position.set(-chassisWidth / 2 + 0.1, 0.75, -chassisLength / 2 + 0.15);
             const pillarR = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarR.position.set(chassisWidth/2 - 0.1, 0.75, -chassisLength/2 + 0.15);
+            pillarR.position.set(chassisWidth / 2 - 0.1, 0.75, -chassisLength / 2 + 0.15);
             const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth, 0.05, 0.4), bodyMat);
-            spoilerWing.position.set(0, 0.9, -chassisLength/2 + 0.15);
+            spoilerWing.position.set(0, 0.9, -chassisLength / 2 + 0.15);
             spoilerWing.castShadow = true;
             carVisMesh.add(pillarL);
             carVisMesh.add(pillarR);
             carVisMesh.add(spoilerWing);
-            
+
             const tlGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16);
-            tlGeo.rotateX(Math.PI/2);
+            tlGeo.rotateX(Math.PI / 2);
             const tlMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            for(let i of [-1, 1]) {
-                for(let j of [0.4, 0.7]) {
+            for (let i of [-1, 1]) {
+                for (let j of [0.4, 0.7]) {
                     const tailLight = new THREE.Mesh(tlGeo, tlMat);
-                    tailLight.position.set(i * j, 0.45, -chassisLength/2 - 0.05);
+                    tailLight.position.set(i * j, 0.45, -chassisLength / 2 - 0.05);
                     carVisMesh.add(tailLight);
                 }
             }
@@ -448,9 +448,9 @@
             const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.1);
             const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
             const leftHeadlight = new THREE.Mesh(hlGeo, hlMat);
-            leftHeadlight.position.set(-chassisWidth/2 + 0.35, 0.35, chassisLength/2 + 0.05);
+            leftHeadlight.position.set(-chassisWidth / 2 + 0.35, 0.35, chassisLength / 2 + 0.05);
             const rightHeadlight = new THREE.Mesh(hlGeo, hlMat);
-            rightHeadlight.position.set(chassisWidth/2 - 0.35, 0.35, chassisLength/2 + 0.05);
+            rightHeadlight.position.set(chassisWidth / 2 - 0.35, 0.35, chassisLength / 2 + 0.05);
             carVisMesh.add(leftHeadlight);
             carVisMesh.add(rightHeadlight);
 
@@ -568,7 +568,7 @@
             lastTime = now;
 
             const maxSteerVal = 0.5;
-            const maxForce = 2000;
+            const maxForce = 3000; // Increased for much faster speed
             const brakeForce = 50;
 
             let engineForce = 0;
@@ -609,7 +609,9 @@
 
             const relativeCameraOffset = new THREE.Vector3(0, 3, -8);
             const cameraOffset = relativeCameraOffset.applyMatrix4(carVisMesh.matrixWorld);
-            camera.position.lerp(cameraOffset, 0.1);
+            // Delta-time scaled smoothing eliminates jitter/lag
+            const lerpFactor = 1.0 - Math.exp(-10 * dt);
+            camera.position.lerp(cameraOffset, lerpFactor);
 
             const lookAtPos = carVisMesh.position.clone().add(new THREE.Vector3(0, 1, 0));
             camera.lookAt(lookAtPos);
