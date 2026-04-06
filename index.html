@@ -1178,14 +1178,22 @@
                 carVisMesh.add(hdLight);
             }
 
-            // Minimap Arrow Marker (Large and Neon for Map Prominence)
-            const arrowGeo = new THREE.ConeGeometry(50, 120, 32); // 10x larger for full map visibility
+            // Minimap Arrow Marker (For Precision Proximity Map)
+            const arrowGeo = new THREE.ConeGeometry(25, 60, 32); 
             arrowGeo.rotateX(Math.PI / 2);
             const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
             const minimapArrow = new THREE.Mesh(arrowGeo, arrowMat);
-            minimapArrow.position.set(0, 50, 0); // Raise higher to clear path meshes
-            minimapArrow.layers.set(1);
+            minimapArrow.position.set(0, 30, 0); 
+            minimapArrow.layers.set(1); // Seen on Proximity Map
             carVisMesh.add(minimapArrow);
+
+            // Giga Dot Marker (For Track Overview Prominence)
+            const dotGeo = new THREE.SphereGeometry(80, 32, 16);
+            const dotMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+            const bigDot = new THREE.Mesh(dotGeo, dotMat);
+            bigDot.position.set(0, 60, 0);
+            bigDot.layers.set(2); // Seen on Full Map
+            carVisMesh.add(bigDot);
 
             scene.add(carVisMesh);
 
@@ -1525,15 +1533,16 @@
 
             const margin = 30;
 
-            // 2. Full Map (Top Left - Balanced Overview)
-            fullMapCamera.layers.set(1); 
-            const fSize = 260; // Better UI scale
+            // 2. Full Map (Top Left - Tactical Overview)
+            fullMapCamera.layers.set(2); // CAR DOT (Layer 2)
+            fullMapCamera.layers.enable(1); // TRACK PATH (Layer 1)
+            const fSize = 260;
             renderer.setViewport(margin, window.innerHeight - fSize - margin, fSize, fSize);
             renderer.setScissor(margin, window.innerHeight - fSize - margin, fSize, fSize);
             renderer.render(scene, fullMapCamera);
 
-            // 3. Minimap (Top Right - Zoomed Proximity)
-            minimapCamera.layers.set(1); 
+            // 3. Minimap (Top Right - Close Radar)
+            minimapCamera.layers.set(1); // ARROW + PATH 
             const mSizeValue = 240;
             renderer.setViewport(window.innerWidth - mSizeValue - margin, window.innerHeight - mSizeValue - margin, mSizeValue, mSizeValue);
             renderer.setScissor(window.innerWidth - mSizeValue - margin, window.innerHeight - mSizeValue - margin, mSizeValue, mSizeValue);
