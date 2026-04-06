@@ -157,6 +157,114 @@
         #respawn-btn:active {
             transform: scale(0.95);
         }
+
+        /* ===== RACE HUD ===== */
+        #race-hud {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        #lap-counter {
+            background: rgba(10, 15, 30, 0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 10px 32px;
+            border: 1px solid rgba(255, 100, 50, 0.55);
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255, 100, 50, 0.8);
+        }
+        #race-timer {
+            background: rgba(10, 15, 30, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 10px;
+            padding: 7px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffcc88;
+            letter-spacing: 2px;
+        }
+        #countdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 180px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 50px rgba(255, 120, 0, 1), 0 0 100px rgba(255, 50, 0, 0.7);
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            line-height: 1;
+        }
+        #race-finish-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 10, 0.88);
+            backdrop-filter: blur(8px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 20;
+        }
+        #race-finish-overlay h2 {
+            margin: 0 0 16px;
+            font-size: 68px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            background: linear-gradient(90deg, #ff8800, #ff0055);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #finish-total-time {
+            font-size: 42px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+            text-shadow: 0 0 20px rgba(255,100,50,0.8);
+        }
+        #finish-lap-times {
+            font-size: 17px;
+            color: #ffaa88;
+            text-align: center;
+            line-height: 2.2;
+            margin-bottom: 34px;
+            letter-spacing: 1px;
+        }
+        #restart-race-btn {
+            background: rgba(255, 100, 50, 0.15);
+            border: 2px solid rgba(255, 100, 50, 0.7);
+            border-radius: 12px;
+            padding: 14px 44px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 4px;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+        #restart-race-btn:hover {
+            background: rgba(255, 100, 50, 0.45);
+            transform: scale(1.06);
+        }
     </style>
 </head>
 
@@ -188,6 +296,19 @@
             Space : Handbrake<br>
             Q : Respawn on Road
         </div>
+
+        <!-- RACE MODE HUD -->
+        <div id="race-hud">
+            <div id="lap-counter">LAP 0 / 3</div>
+            <div id="race-timer">00:00.000</div>
+        </div>
+        <div id="countdown-overlay"></div>
+        <div id="race-finish-overlay">
+            <h2>RACE COMPLETE!</h2>
+            <div id="finish-total-time"></div>
+            <div id="finish-lap-times"></div>
+            <button id="restart-race-btn">RACE AGAIN</button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -205,6 +326,18 @@
         let wallOddTex, wallEvenTex, wallEvenRightTex;
         let wallOddCtx, wallEvenCtx, wallEvenRightCtx;
         let wallAnimTime = 0;
+
+        // ===== RACE STATE =====
+        const TOTAL_LAPS = 3;
+        let raceState = 'idle'; // 'idle' | 'countdown' | 'racing' | 'finished'
+        let currentLap = 0;
+        let raceStartTime = 0;
+        let lapStartTime = 0;
+        let lapTimes = [];
+        let finishLineFwdX = 0, finishLineFwdZ = 1; // forward direction of finish line
+        let finishLinePosX = 0, finishLinePosZ = 0;
+        let prevFinishSignedDist = null;  // signed dist on previous frame
+        let hasLeftFinishZone = false;    // car must travel away before lap can count
 
         // Input Map
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false, q: false };
@@ -277,13 +410,23 @@
         }
 
         // --- INITIALIZATION ---
+        // ===== HELPER: FORMAT TIME =====
+        function formatTime(ms) {
+            const m = Math.floor(ms / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            const cs = Math.floor((ms % 1000) / 10);
+            return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+        }
+
         function init() {
             initGraphics();
             initPhysics();
             createEnvironment();
             createCar();
+            createFinishLine();
             setupControls();
             initWeather();
+            startCountdown();
 
             window.addEventListener('resize', onWindowResize, false);
             requestAnimationFrame(animate);
@@ -297,7 +440,7 @@
             const rainGeo = new THREE.BufferGeometry();
             const rainDropPos = new Float32Array(rainCount * 3);
             for (let i = 0; i < rainCount * 3; i++) {
-                rainDropPos[i] = (Math.random() - 0.5) * 600; // x, z spread
+                rainDropPos[i] = (Math.random() - 0.5) * 1000; // x, z spread expanded
             }
             // Explicitly set Y heights (index 1, 4, 7...) 
             for (let i = 1; i < rainCount * 3; i += 3) {
@@ -422,7 +565,7 @@
             const gTex = createNoiseTexture(512, 512, 3, 0.5, '#0b1c04', '#152b0b');
             gTex.repeat.set(150, 150);
 
-            const groundGeo = new THREE.PlaneGeometry(10000, 10000);
+            const groundGeo = new THREE.PlaneGeometry(20000, 20000);
             const groundMat = new THREE.MeshStandardMaterial({
                 color: 0x222222, // Darken background to hide void
                 map: gTex,
@@ -434,10 +577,10 @@
             groundMesh.receiveShadow = true;
             scene.add(groundMesh);
 
-            // Create Closed Loop Track
+            // Create Closed Loop Track - SCALE TO ~10KM
             const roadWidth = 26;
-            const segments = 300;
-            const baseRadius = 280;
+            const segments = 2000;
+            const baseRadius = 1550;
 
             // PBR Road Materials
             const roadColorTex = createRoadColorMap();
@@ -621,6 +764,175 @@
                     }
                 }
             }
+        }
+
+        // ===== FINISH LINE =====
+        function createFinishLine() {
+            if (!window.trackStartPos) return;
+            const yaw = window.trackStartYaw || 0;
+
+            // Store finish line world position + forward direction for lap detection
+            finishLinePosX = window.trackStartPos.x;
+            finishLinePosZ = window.trackStartPos.z;
+            // Forward direction along the road at start (perpendicular to normal)
+            finishLineFwdX = Math.sin(yaw);
+            finishLineFwdZ = Math.cos(yaw);
+
+            // --- CHECKERED FLOOR STRIPE ---
+            const checkerCanvas = document.createElement('canvas');
+            checkerCanvas.width = 256; checkerCanvas.height = 64;
+            const cCtx = checkerCanvas.getContext('2d');
+            const cols = 16, rows = 4, cw = 16, ch = 16;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    cCtx.fillStyle = (row + col) % 2 === 0 ? '#ffffff' : '#000000';
+                    cCtx.fillRect(col * cw, row * ch, cw, ch);
+                }
+            }
+            const checkerTex = new THREE.CanvasTexture(checkerCanvas);
+            const flMat = new THREE.MeshBasicMaterial({ map: checkerTex });
+            const flGeo = new THREE.BoxGeometry(28, 0.18, 3.5);
+            const flMesh = new THREE.Mesh(flGeo, flMat);
+            flMesh.position.set(window.trackStartPos.x, 0.18, window.trackStartPos.z);
+            flMesh.rotation.y = yaw;
+            scene.add(flMesh);
+
+            // --- TWO FINISH PILLARS ---
+            const pillarMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff, roughness: 0.3, metalness: 0.5,
+                emissive: 0xffffff, emissiveIntensity: 0.6
+            });
+            const pGeo = new THREE.BoxGeometry(0.6, 9, 0.6);
+
+            // Perpendicular direction (sideways from road)
+            const nx = Math.cos(yaw);   // same as wall code
+            const nz = -Math.sin(yaw);
+            const halfRoad = 14;        // half of road width 28
+
+            for (let side of [1, -1]) {
+                const px = window.trackStartPos.x + nx * side * halfRoad;
+                const pz = window.trackStartPos.z + nz * side * halfRoad;
+                const pillar = new THREE.Mesh(pGeo, pillarMat);
+                pillar.position.set(px, 4.5, pz);
+                scene.add(pillar);
+
+                // Neon top cap
+                const capMat = new THREE.MeshBasicMaterial({ color: side === 1 ? 0x00ffcc : 0xff0055 });
+                const cap = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 1.2), capMat);
+                cap.position.set(px, 9.3, pz);
+                scene.add(cap);
+            }
+
+            // --- OVERHEAD BANNER ---
+            const bannerCanvas = document.createElement('canvas');
+            bannerCanvas.width = 512; bannerCanvas.height = 64;
+            const bCtx = bannerCanvas.getContext('2d');
+            bCtx.fillStyle = '#111';
+            bCtx.fillRect(0, 0, 512, 64);
+            bCtx.fillStyle = '#ffcc00';
+            bCtx.font = 'bold 44px Arial';
+            bCtx.textBaseline = 'middle';
+            bCtx.textAlign = 'center';
+            bCtx.fillText('FINISH', 256, 32);
+            const bannerTex = new THREE.CanvasTexture(bannerCanvas);
+            const bannerMat = new THREE.MeshBasicMaterial({ map: bannerTex, side: THREE.DoubleSide });
+            const bannerMesh = new THREE.Mesh(new THREE.PlaneGeometry(28, 2), bannerMat);
+            bannerMesh.position.set(window.trackStartPos.x, 9.5, window.trackStartPos.z);
+            bannerMesh.rotation.y = yaw;
+            scene.add(bannerMesh);
+        }
+
+        // ===== RACE LIFECYCLE =====
+        function startCountdown() {
+            raceState = 'countdown';
+            const el = document.getElementById('countdown-overlay');
+            document.getElementById('lap-counter').textContent = `LAP 0 / ${TOTAL_LAPS}`;
+            document.getElementById('race-timer').textContent = '00:00.00';
+            let count = 3;
+            el.style.opacity = '1';
+            el.style.color = '#fff';
+            el.textContent = count;
+
+            const tick = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    el.textContent = count;
+                    el.style.color = count === 2 ? '#ffaa00' : '#ff4400';
+                } else if (count === 0) {
+                    el.textContent = 'GO!';
+                    el.style.color = '#00ff88';
+                    el.style.fontSize = '140px';
+                } else {
+                    el.style.opacity = '0';
+                    clearInterval(tick);
+                    startRace();
+                }
+            }, 1000);
+        }
+
+        function startRace() {
+            raceState = 'racing';
+            currentLap = 1;
+            raceStartTime = performance.now();
+            lapStartTime = raceStartTime;
+            lapTimes = [];
+            prevFinishSignedDist = null;
+            hasLeftFinishZone = false;
+            document.getElementById('lap-counter').textContent = `LAP 1 / ${TOTAL_LAPS}`;
+        }
+
+        function recordLap() {
+            const now = performance.now();
+            const lapMs = now - lapStartTime;
+            lapTimes.push(lapMs);
+            lapStartTime = now;
+
+            if (currentLap >= TOTAL_LAPS) {
+                finishRace(now);
+            } else {
+                currentLap++;
+                document.getElementById('lap-counter').textContent = `LAP ${currentLap} / ${TOTAL_LAPS}`;
+                // Flash lap notice
+                const el = document.getElementById('countdown-overlay');
+                el.style.color = '#ffcc00';
+                el.style.fontSize = '90px';
+                el.textContent = `LAP ${currentLap}`;
+                el.style.opacity = '1';
+                setTimeout(() => { el.style.opacity = '0'; el.style.fontSize = '180px'; }, 1200);
+            }
+        }
+
+        function finishRace(nowMs) {
+            raceState = 'finished';
+            const totalMs = nowMs - raceStartTime;
+
+            document.getElementById('finish-total-time').textContent =
+                `TOTAL: ${formatTime(totalMs)}`;
+
+            let lapHtml = '';
+            lapTimes.forEach((ms, i) => {
+                lapHtml += `Lap ${i + 1}:  ${formatTime(ms)}<br>`;
+            });
+            document.getElementById('finish-lap-times').innerHTML = lapHtml;
+
+            const overlay = document.getElementById('race-finish-overlay');
+            overlay.style.display = 'flex';
+        }
+
+        function restartRace() {
+            document.getElementById('race-finish-overlay').style.display = 'none';
+            // Teleport car back to start
+            if (carChassisBody && window.trackStartPos) {
+                carChassisBody.position.set(window.trackStartPos.x, 1.5, window.trackStartPos.z);
+                carChassisBody.velocity.set(0, 0, 0);
+                carChassisBody.angularVelocity.set(0, 0, 0);
+                const rq = new CANNON.Quaternion();
+                rq.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), window.trackStartYaw || 0);
+                carChassisBody.quaternion.copy(rq);
+            }
+            prevFinishSignedDist = null;
+            hasLeftFinishZone = false;
+            startCountdown();
         }
 
         function createCar() {
@@ -893,6 +1205,9 @@
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
             });
 
+            // RACE AGAIN button
+            document.getElementById('restart-race-btn').addEventListener('click', restartRace);
+
             // Respawn button — unflip only (lifts car upright at current position)
             document.getElementById('respawn-btn').addEventListener('click', () => {
                 if (!carChassisBody) return;
@@ -935,20 +1250,23 @@
             let brakeValue = 0;
             let steeringValue = 0;
 
-            if (keys.w || keys.ArrowUp) {
-                engineForce = -maxForce;
-            } else if (keys.s || keys.ArrowDown) {
-                engineForce = maxForce / 2;
-            }
+            // Block driving during countdown or post-finish
+            const canDrive = (raceState === 'racing');
 
-            if (keys[' ']) {
-                brakeValue = brakeForce;
-            }
-
-            if (keys.a || keys.ArrowLeft) {
-                steeringValue = maxSteerVal;
-            } else if (keys.d || keys.ArrowRight) {
-                steeringValue = -maxSteerVal;
+            if (canDrive) {
+                if (keys.w || keys.ArrowUp) {
+                    engineForce = -maxForce;
+                } else if (keys.s || keys.ArrowDown) {
+                    engineForce = maxForce / 2;
+                }
+                if (keys[' ']) {
+                    brakeValue = brakeForce;
+                }
+                if (keys.a || keys.ArrowLeft) {
+                    steeringValue = maxSteerVal;
+                } else if (keys.d || keys.ArrowRight) {
+                    steeringValue = -maxSteerVal;
+                }
             }
 
             carVehicle.applyEngineForce(engineForce, 0); // Front Right
@@ -997,6 +1315,34 @@
             carChassisBody.vectorToWorldFrame(forwardVec, forwardVec);
             const direction = carChassisBody.velocity.dot(forwardVec) > 0 ? 1 : -1;
             uiSpeedValue.innerText = Math.round(speed * direction);
+
+            // ===== RACE TICK =====
+            if (raceState === 'racing') {
+                // Live timer
+                const elapsed = performance.now() - raceStartTime;
+                document.getElementById('race-timer').textContent = formatTime(elapsed);
+
+                // Lap crossing via signed projection onto finish-line forward axis
+                const relX = carChassisBody.position.x - finishLinePosX;
+                const relZ = carChassisBody.position.z - finishLinePosZ;
+                const signedDist = relX * finishLineFwdX + relZ * finishLineFwdZ;
+                const lateralDist = Math.abs(relX * (-finishLineFwdZ) + relZ * finishLineFwdX);
+
+                // Car is within track-width laterally (only count if car is on the road)
+                if (lateralDist < 15) {
+                    // Once car is far enough from the line, enable crossing detection
+                    if (!hasLeftFinishZone && (Math.abs(relX) > 40 || Math.abs(relZ) > 40)) {
+                        hasLeftFinishZone = true;
+                    }
+                    // Crossing: previous frame was behind (-), now is in front (+)
+                    if (hasLeftFinishZone && prevFinishSignedDist !== null &&
+                        prevFinishSignedDist < 0 && signedDist >= 0) {
+                        hasLeftFinishZone = false;
+                        recordLap();
+                    }
+                    prevFinishSignedDist = signedDist;
+                }
+            }
 
             // --- ANIMATE WALL TEXTURES ---
             wallAnimTime += dt;
