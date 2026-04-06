@@ -153,7 +153,7 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255, 50, 50, 0.6);
             transform: scale(1.1);
         }
-        
+
         #respawn-btn:active {
             transform: scale(0.95);
         }
@@ -163,10 +163,11 @@
 <body>
     <div id="ui">
         <button id="respawn-btn" title="Respawn / Unflip Car">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-            </svg>
+            </svg> Q
         </button>
         <div id="top-bar">
             <h1>OUTRUN HORIZON</h1>
@@ -200,9 +201,14 @@
         let carVisMesh, wheelVisMeshes = [];
         let time = 0;
 
+        // Animated wall textures
+        let wallOddTex, wallEvenTex;
+        let wallOddCtx, wallEvenCtx;
+        let wallAnimTime = 0;
+
         // Input Map
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false, q: false };
-        
+
         // Store track centre points and yaw angles for Q respawn
         const trackPoints = [];
         const trackYaws = [];
@@ -212,10 +218,10 @@
             const canvas = document.createElement('canvas');
             canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = colorA; ctx.fillRect(0,0,width,height);
-            for(let i=0; i<width*height * 0.1; i++) {
+            ctx.fillStyle = colorA; ctx.fillRect(0, 0, width, height);
+            for (let i = 0; i < width * height * 0.1; i++) {
                 ctx.fillStyle = (Math.random() > 0.5) ? colorB : colorA;
-                ctx.fillRect(Math.random()*width, Math.random()*height, scale, scale);
+                ctx.fillRect(Math.random() * width, Math.random() * height, scale, scale);
             }
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
@@ -227,12 +233,12 @@
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#8080ff'; // Default flat normal (Z-up in tangent space)
-            ctx.fillRect(0,0,512,512);
-            for(let i=0; i<30000; i++) {
+            ctx.fillRect(0, 0, 512, 512);
+            for (let i = 0; i < 30000; i++) {
                 const r = 128 + (Math.random() - 0.5) * 100;
                 const g = 128 + (Math.random() - 0.5) * 100;
                 ctx.fillStyle = `rgb(${r},${g},255)`;
-                ctx.fillRect(Math.random()*512, Math.random()*512, 1, 1);
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
             }
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
@@ -243,16 +249,16 @@
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 1024;
             const ctx = canvas.getContext('2d');
-            
+
             // Base light black asphalt
-            ctx.fillStyle = '#2b2b2b'; ctx.fillRect(0,0,512,1024);
-            
+            ctx.fillStyle = '#2b2b2b'; ctx.fillRect(0, 0, 512, 1024);
+
             // Grain
-            for(let i=0; i<10000; i++) {
+            for (let i = 0; i < 10000; i++) {
                 ctx.fillStyle = Math.random() > 0.5 ? '#222' : '#333';
-                ctx.fillRect(Math.random()*512, Math.random()*1024, 2, 2);
+                ctx.fillRect(Math.random() * 512, Math.random() * 1024, 2, 2);
             }
-            
+
             // Yellow lines
             ctx.fillStyle = '#ddaa00';
             ctx.fillRect(240, 0, 10, 300);
@@ -264,7 +270,7 @@
             ctx.fillStyle = '#fff';
             ctx.fillRect(40, 0, 10, 1024);
             ctx.fillRect(462, 0, 10, 1024);
-            
+
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
             return tex;
@@ -285,20 +291,20 @@
 
         let rainSystem;
         let isRaining = false;
-        
+
         function initWeather() {
             const rainCount = 5000;
             const rainGeo = new THREE.BufferGeometry();
             const rainDropPos = new Float32Array(rainCount * 3);
-            for(let i=0; i<rainCount*3; i++) {
+            for (let i = 0; i < rainCount * 3; i++) {
                 rainDropPos[i] = (Math.random() - 0.5) * 600; // x, z spread
             }
             // Explicitly set Y heights (index 1, 4, 7...) 
-            for(let i=1; i<rainCount*3; i+=3) {
+            for (let i = 1; i < rainCount * 3; i += 3) {
                 rainDropPos[i] = Math.random() * 400; // y spread
             }
             rainGeo.setAttribute('position', new THREE.BufferAttribute(rainDropPos, 3));
-            
+
             const rainMat = new THREE.PointsMaterial({
                 color: 0xccddff,
                 size: 0.8,
@@ -307,10 +313,10 @@
             });
             rainSystem = new THREE.Points(rainGeo, rainMat);
             scene.add(rainSystem);
-            
+
             isRaining = Math.random() < 0.2; // 20% chance of rain on start
             rainSystem.visible = isRaining;
-            
+
             // Randomly toggle weather every 30 seconds
             setInterval(() => {
                 isRaining = Math.random() < 0.2;
@@ -321,7 +327,7 @@
         function initGraphics() {
             scene = new THREE.Scene();
             // Daylight foggy atmosphere
-            scene.background = new THREE.Color(0xaaccff); 
+            scene.background = new THREE.Color(0xaaccff);
             scene.fog = new THREE.FogExp2(0xaaccff, 0.003);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -337,7 +343,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Very soft shadows
-            
+
             // Photorealistic HDR Rendering
             renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -347,7 +353,7 @@
             // Generate Procedural Sunset Environment Map for realistic metallic reflections
             const pmremGenerator = new THREE.PMREMGenerator(renderer);
             pmremGenerator.compileEquirectangularShader();
-            
+
             const envCtx = document.createElement('canvas').getContext('2d');
             envCtx.canvas.width = 1024; envCtx.canvas.height = 512;
             const gradient = envCtx.createLinearGradient(0, 0, 0, 512);
@@ -357,24 +363,24 @@
             gradient.addColorStop(0.51, '#112211'); // Dark Ground
             envCtx.fillStyle = gradient;
             envCtx.fillRect(0, 0, 1024, 512);
-            
+
             // Draw clouds
             envCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            for(let i=0; i<40; i++) {
+            for (let i = 0; i < 40; i++) {
                 const cx = Math.random() * 1024;
-                const cy = Math.random() * 200; 
+                const cy = Math.random() * 200;
                 const size = 30 + Math.random() * 60;
                 envCtx.beginPath();
-                envCtx.arc(cx, cy, size, 0, Math.PI*2);
-                envCtx.arc(cx+size*0.8, cy-size*0.2, size*0.8, 0, Math.PI*2);
-                envCtx.arc(cx+size*1.2, cy+size*0.1, size*0.6, 0, Math.PI*2);
+                envCtx.arc(cx, cy, size, 0, Math.PI * 2);
+                envCtx.arc(cx + size * 0.8, cy - size * 0.2, size * 0.8, 0, Math.PI * 2);
+                envCtx.arc(cx + size * 1.2, cy + size * 0.1, size * 0.6, 0, Math.PI * 2);
                 envCtx.fill();
             }
-            
+
             const envTex = new THREE.CanvasTexture(envCtx.canvas);
             envTex.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = pmremGenerator.fromEquirectangular(envTex).texture;
-            
+
             // Create massive Skydome directly instead of scene.background for better gradient
             const skyGeo = new THREE.SphereGeometry(900, 32, 32);
             const skyMat = new THREE.MeshBasicMaterial({ map: envTex, side: THREE.BackSide, fog: false });
@@ -415,11 +421,11 @@
             // Realistic Grass Ground
             const gTex = createNoiseTexture(512, 512, 3, 0.5, '#0b1c04', '#152b0b');
             gTex.repeat.set(150, 150);
-            
+
             const groundGeo = new THREE.PlaneGeometry(10000, 10000);
-            const groundMat = new THREE.MeshStandardMaterial({ 
+            const groundMat = new THREE.MeshStandardMaterial({
                 color: 0x222222, // Darken background to hide void
-                map: gTex, 
+                map: gTex,
                 roughness: 0.9,
                 metalness: 0.1
             });
@@ -432,14 +438,14 @@
             const roadWidth = 26;
             const segments = 300;
             const baseRadius = 280;
-            
+
             // PBR Road Materials
             const roadColorTex = createRoadColorMap();
             roadColorTex.repeat.set(1, 10); // Stretch along path
             const roadNormalTex = createAsphaltNormalMap();
             roadNormalTex.repeat.set(10, 40);
 
-            const roadMat = new THREE.MeshStandardMaterial({ 
+            const roadMat = new THREE.MeshStandardMaterial({
                 map: roadColorTex,
                 normalMap: roadNormalTex,
                 roughness: 0.7,
@@ -451,13 +457,36 @@
             const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.6, metalness: 0.4 });
             // Neon glowing markers
             const neonMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
-            
+
+            // --- ANIMATED WALL TEXTURES ---
+            const W = 512, H = 128;
+
+            // ODD walls: scrolling "OUTRUN HORIZON"
+            const oddCanvas = document.createElement('canvas');
+            oddCanvas.width = W; oddCanvas.height = H;
+            wallOddCtx = oddCanvas.getContext('2d');
+            wallOddTex = new THREE.CanvasTexture(oddCanvas);
+            wallOddTex.wrapS = THREE.RepeatWrapping;
+            const oddWallMat = new THREE.MeshStandardMaterial({
+                map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            });
+
+            // EVEN walls: pulsing ">>>" direction arrows
+            const evenCanvas = document.createElement('canvas');
+            evenCanvas.width = W; evenCanvas.height = H;
+            wallEvenCtx = evenCanvas.getContext('2d');
+            wallEvenTex = new THREE.CanvasTexture(evenCanvas);
+            wallEvenTex.wrapS = THREE.RepeatWrapping;
+            const evenWallMat = new THREE.MeshStandardMaterial({
+                map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            });
+
             // Office/Sci-fi abstract building generation
             const bGeo = new THREE.BoxGeometry(10, 40, 10);
             const bTex = createNoiseTexture(128, 512, 16, 0.9, '#111', '#2244ff'); // Fake windows
             bTex.repeat.set(2, 8);
             const bMat = new THREE.MeshStandardMaterial({ map: bTex, roughness: 0.2, metalness: 0.8, emissive: 0x001133 });
-            
+
             const physicsHouseShape = new CANNON.Box(new CANNON.Vec3(5, 20, 5));
 
             const points = [];
@@ -480,7 +509,7 @@
 
                 const dx = p2.x - p1.x;
                 const dz = p2.z - p1.z;
-                const dist = Math.sqrt(dx*dx + dz*dz) || 1;
+                const dist = Math.sqrt(dx * dx + dz * dz) || 1;
                 const yaw = Math.atan2(dx, dz);
 
                 let angleDiff = Math.abs(yaw - yaw0);
@@ -527,9 +556,10 @@
                     const wallX = wallInnerX + nx * side * wallHalfThick;
                     const wallZ = wallInnerZ + nz * side * wallHalfThick;
 
-                    // Flat concrete wall — same material both sides, no neon banding on road face
+                    // Flat wall — odd segments show "OUTRUN HORIZON", even show ">>>"
                     const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 1.5);
-                    const wMesh = new THREE.Mesh(wGeo, wallMat);
+                    const chosenMat = (i % 2 === 1) ? oddWallMat : evenWallMat;
+                    const wMesh = new THREE.Mesh(wGeo, chosenMat);
                     wMesh.position.set(wallX, wallHalfH, wallZ);
                     wMesh.rotation.y = yaw;
                     wMesh.castShadow = true;
@@ -560,18 +590,18 @@
                         const offset = localWidth / 2 + 15 + Math.random() * 30;
                         const objX = midX + nx * side * offset;
                         const objZ = midZ + nz * side * offset;
-                        const h = 20 + Math.random()*40;
-                        
-                        const building = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random()*10, h, 10 + Math.random()*10), bMat);
-                        building.position.set(objX, h/2, objZ);
+                        const h = 20 + Math.random() * 40;
+
+                        const building = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random() * 10, h, 10 + Math.random() * 10), bMat);
+                        building.position.set(objX, h / 2, objZ);
                         building.rotation.y = Math.random() * Math.PI;
                         building.castShadow = true;
                         building.receiveShadow = true;
                         scene.add(building);
 
                         const hBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
-                        hBody.addShape(new CANNON.Box(new CANNON.Vec3(5, h/2, 5)));
-                        hBody.position.set(objX, h/2, objZ);
+                        hBody.addShape(new CANNON.Box(new CANNON.Vec3(5, h / 2, 5)));
+                        hBody.position.set(objX, h / 2, objZ);
                         world.addBody(hBody);
                     }
                 }
@@ -588,7 +618,7 @@
             const chassisShape = new CANNON.Box(new CANNON.Vec3(chassisWidth * 0.5, chassisHeight * 0.5, chassisLength * 0.5));
             carChassisBody = new CANNON.Body({ mass: mass });
             carChassisBody.addShape(chassisShape, new CANNON.Vec3(0, 0.4, 0)); // Offset center of mass
-            carChassisBody.position.copy(window.trackStartPos || new CANNON.Vec3(0,1,0));
+            carChassisBody.position.copy(window.trackStartPos || new CANNON.Vec3(0, 1, 0));
             const initialQ = new CANNON.Quaternion();
             initialQ.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), window.trackStartYaw || 0);
             carChassisBody.quaternion.copy(initialQ);
@@ -599,37 +629,37 @@
 
             // --- PHOTOREALISTIC VISUAL CHASSIS (Supercar) ---
             carVisMesh = new THREE.Group();
-            
+
             // Flake Normal map
             const flakeMap = createNoiseTexture(256, 256, 2, 0.8, '#888', '#fff');
             flakeMap.repeat.set(8, 8);
 
             const paintColor = 0xff1100; // Ferrari/Lambo Red
-            
+
             // PBR Materials
-            const bodyMat = new THREE.MeshPhysicalMaterial({ 
-                color: paintColor, 
-                metalness: 0.7, 
+            const bodyMat = new THREE.MeshPhysicalMaterial({
+                color: paintColor,
+                metalness: 0.7,
                 roughness: 0.3,
-                clearcoat: 1.0, 
+                clearcoat: 1.0,
                 clearcoatRoughness: 0.05,
                 normalMap: flakeMap, // Metallic speckle effect
                 normalScale: new THREE.Vector2(0.3, 0.3)
             });
-            
+
             const carbonFiberTex = createNoiseTexture(64, 64, 4, 1.0, '#333', '#111');
             const carbonMat = new THREE.MeshStandardMaterial({ map: carbonFiberTex, roughness: 0.7, metalness: 0.3 });
-            
-            const glassMat = new THREE.MeshPhysicalMaterial({ 
-                color: 0x010101, 
-                metalness: 0.9, 
-                roughness: 0.1, 
+
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0x010101,
+                metalness: 0.9,
+                roughness: 0.1,
                 transmission: 0.2, // Dark tinted glass
                 transparent: true
             });
 
             // Geometry composition (Lamborghini/Cyberpunk Wedge shape)
-            
+
             // Main wide lower body
             const lowerBodyGeo = new THREE.BoxGeometry(chassisWidth, chassisHeight * 0.6, chassisLength);
             const lowerBody = new THREE.Mesh(lowerBodyGeo, bodyMat);
@@ -639,7 +669,7 @@
             carVisMesh.add(lowerBody);
 
             // Sleek slanted hood
-            const hoodGeo = new THREE.BoxGeometry(chassisWidth*0.95, 0.3, chassisLength * 0.4);
+            const hoodGeo = new THREE.BoxGeometry(chassisWidth * 0.95, 0.3, chassisLength * 0.4);
             const hood = new THREE.Mesh(hoodGeo, bodyMat);
             hood.position.set(0, 0.45, chassisLength * 0.3);
             hood.rotation.x = 0.2; // slant down
@@ -653,7 +683,7 @@
             cabin.rotation.x = 0.1;
             cabin.castShadow = true;
             carVisMesh.add(cabin);
-            
+
             // Roof
             const roofGeo = new THREE.BoxGeometry(chassisWidth * 0.76, 0.05, chassisLength * 0.3);
             const roof = new THREE.Mesh(roofGeo, carbonMat);
@@ -663,46 +693,46 @@
             // Carbon Fiber Side Skirts
             const skirtGeo = new THREE.BoxGeometry(0.1, 0.15, chassisLength * 0.9);
             const skirtL = new THREE.Mesh(skirtGeo, carbonMat);
-            skirtL.position.set(-chassisWidth/2 - 0.05, 0.15, 0);
+            skirtL.position.set(-chassisWidth / 2 - 0.05, 0.15, 0);
             const skirtR = new THREE.Mesh(skirtGeo, carbonMat);
-            skirtR.position.set(chassisWidth/2 + 0.05, 0.15, 0);
+            skirtR.position.set(chassisWidth / 2 + 0.05, 0.15, 0);
             carVisMesh.add(skirtL); carVisMesh.add(skirtR);
 
             // Massive Rear carbon Spoiler
             const spoilerPillarGeo = new THREE.BoxGeometry(0.05, 0.4, 0.2);
             const pillarL = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarL.position.set(-chassisWidth/2 + 0.1, 0.7, -chassisLength/2 + 0.1);
+            pillarL.position.set(-chassisWidth / 2 + 0.1, 0.7, -chassisLength / 2 + 0.1);
             const pillarR = new THREE.Mesh(spoilerPillarGeo, bodyMat);
-            pillarR.position.set(chassisWidth/2 - 0.1, 0.7, -chassisLength/2 + 0.1);
+            pillarR.position.set(chassisWidth / 2 - 0.1, 0.7, -chassisLength / 2 + 0.1);
             const spoilerWing = new THREE.Mesh(new THREE.BoxGeometry(chassisWidth + 0.2, 0.05, 0.5), carbonMat);
-            spoilerWing.position.set(0, 0.9, -chassisLength/2 + 0.05);
+            spoilerWing.position.set(0, 0.9, -chassisLength / 2 + 0.05);
             spoilerWing.rotation.x = -0.1; // downforce angle
             spoilerWing.castShadow = true;
             carVisMesh.add(pillarL); carVisMesh.add(pillarR); carVisMesh.add(spoilerWing);
-            
+
             // High detail LED Lights
             const tlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.05);
             const tlMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            for(let i of [-1, 1]) {
+            for (let i of [-1, 1]) {
                 const tailLight = new THREE.Mesh(tlGeo, tlMat);
-                tailLight.position.set(i * 0.6, 0.5, -chassisLength/2 - 0.01);
+                tailLight.position.set(i * 0.6, 0.5, -chassisLength / 2 - 0.01);
                 carVisMesh.add(tailLight);
             }
 
             const hlGeo = new THREE.BoxGeometry(0.4, 0.05, 0.2);
             const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Bright white LEDs
-            for(let i of [-1, 1]) {
+            for (let i of [-1, 1]) {
                 const hdLight = new THREE.Mesh(hlGeo, hlMat);
-                hdLight.position.set(i * (chassisWidth/2 - 0.3), 0.5, chassisLength/2 + 0.05);
+                hdLight.position.set(i * (chassisWidth / 2 - 0.3), 0.5, chassisLength / 2 + 0.05);
                 carVisMesh.add(hdLight);
             }
 
             // Minimap Arrow Marker (Only visible on Layer 1)
             const arrowGeo = new THREE.ConeGeometry(5, 12, 3);
-            arrowGeo.rotateX(Math.PI / 2); 
-            const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 }); 
+            arrowGeo.rotateX(Math.PI / 2);
+            const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
             const minimapArrow = new THREE.Mesh(arrowGeo, arrowMat);
-            minimapArrow.position.set(0, 20, 0); 
+            minimapArrow.position.set(0, 20, 0);
             minimapArrow.layers.set(1);
             carVisMesh.add(minimapArrow);
 
@@ -733,8 +763,8 @@
                 useCustomSlidingRotationalSpeed: true
             };
 
-            const wX = chassisWidth/2 + 0.05;
-            const wZ = chassisLength/2 - 0.7;
+            const wX = chassisWidth / 2 + 0.05;
+            const wZ = chassisLength / 2 - 0.7;
             wheelOptions.chassisConnectionPointLocal.set(-wX, 0.5, wZ);
             carVehicle.addWheel(wheelOptions);
             wheelOptions.chassisConnectionPointLocal.set(wX, 0.5, wZ);
@@ -750,42 +780,42 @@
             const wheelBodies = [];
             const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 32);
             wheelGeo.rotateZ(Math.PI / 2);
-            
+
             // Draw a realistic rim with canvas
             const wCanvas = document.createElement('canvas');
             wCanvas.width = 256; wCanvas.height = 256;
             const wCtx = wCanvas.getContext('2d');
             wCtx.fillStyle = '#111'; // Rubber
             wCtx.fillRect(0, 0, 256, 256);
-            
+
             // metallic rim circles
             wCtx.beginPath();
-            wCtx.arc(128, 128, 80, 0, Math.PI*2);
+            wCtx.arc(128, 128, 80, 0, Math.PI * 2);
             wCtx.fillStyle = '#666'; // rim color
             wCtx.fill();
-            
+
             wCtx.beginPath();
-            wCtx.arc(128, 128, 20, 0, Math.PI*2);
+            wCtx.arc(128, 128, 20, 0, Math.PI * 2);
             wCtx.fillStyle = '#aaa'; // center cap
             wCtx.fill();
-            
+
             // spoke star
-            for(let i=0; i<5; i++) {
+            for (let i = 0; i < 5; i++) {
                 wCtx.save();
                 wCtx.translate(128, 128);
-                wCtx.rotate((Math.PI*2/5) * i);
+                wCtx.rotate((Math.PI * 2 / 5) * i);
                 wCtx.fillStyle = '#444';
                 wCtx.fillRect(-5, 20, 10, 60);
                 wCtx.restore();
             }
-            
+
             const wTex = new THREE.CanvasTexture(wCanvas);
 
-            const wheelMat = new THREE.MeshStandardMaterial({ 
-                color: 0x333333, 
-                roughness: 0.8, 
+            const wheelMat = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.8,
                 metalness: 0.5, // slightly reflective rims
-                map: wTex 
+                map: wTex
             });
 
             carVehicle.wheelInfos.forEach((wheel) => {
@@ -826,7 +856,7 @@
             for (let i = 0; i < trackPoints.length; i++) {
                 const dx = trackPoints[i].x - cx;
                 const dz = trackPoints[i].z - cz;
-                const d = dx*dx + dz*dz;
+                const d = dx * dx + dz * dz;
                 if (d < bestDist) { bestDist = d; bestIdx = i; }
             }
             const tp = trackPoints[bestIdx];
@@ -847,20 +877,20 @@
             window.addEventListener('keyup', (e) => {
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
             });
-            
+
             // Respawn button — unflip only (lifts car upright at current position)
             document.getElementById('respawn-btn').addEventListener('click', () => {
-                if(!carChassisBody) return;
+                if (!carChassisBody) return;
                 const currentPos = carChassisBody.position;
                 carChassisBody.position.set(currentPos.x, 3, currentPos.z);
-                
+
                 const euler = new THREE.Euler().setFromQuaternion(
                     new THREE.Quaternion(carChassisBody.quaternion.x, carChassisBody.quaternion.y, carChassisBody.quaternion.z, carChassisBody.quaternion.w)
                 );
                 const q = new CANNON.Quaternion();
                 q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), euler.y);
                 carChassisBody.quaternion.copy(q);
-                
+
                 carChassisBody.velocity.set(0, 0, 0);
                 carChassisBody.angularVelocity.set(0, 0, 0);
             });
@@ -921,12 +951,12 @@
 
             if (isRaining && rainSystem) {
                 const positions = rainSystem.geometry.attributes.position.array;
-                for(let i=1; i<positions.length; i+=3) {
+                for (let i = 1; i < positions.length; i += 3) {
                     positions[i] -= 200 * dt; // Fall downward
-                    if(positions[i] < 0) { // reset to top
+                    if (positions[i] < 0) { // reset to top
                         positions[i] = 400;
-                        positions[i-1] = carVisMesh.position.x + (Math.random() - 0.5) * 600; 
-                        positions[i+1] = carVisMesh.position.z + (Math.random() - 0.5) * 600;
+                        positions[i - 1] = carVisMesh.position.x + (Math.random() - 0.5) * 600;
+                        positions[i + 1] = carVisMesh.position.z + (Math.random() - 0.5) * 600;
                     }
                 }
                 rainSystem.geometry.attributes.position.needsUpdate = true;
@@ -952,6 +982,82 @@
             carChassisBody.vectorToWorldFrame(forwardVec, forwardVec);
             const direction = carChassisBody.velocity.dot(forwardVec) > 0 ? 1 : -1;
             uiSpeedValue.innerText = Math.round(speed * direction);
+
+            // --- ANIMATE WALL TEXTURES ---
+            wallAnimTime += dt;
+            const W = 512, H = 128;
+
+            if (wallOddCtx && wallOddTex) {
+                // Scrolling neon "OUTRUN HORIZON" on dark concrete
+                wallOddCtx.fillStyle = '#1a1a2e';
+                wallOddCtx.fillRect(0, 0, W, H);
+                // Noise grain
+                for (let g = 0; g < 300; g++) {
+                    const bv = Math.floor(Math.random() * 40 + 30);
+                    wallOddCtx.fillStyle = `rgba(${bv},${bv},${bv},0.3)`;
+                    wallOddCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+                }
+                // Horizontal neon stripe
+                const stripeY = H * 0.72;
+                wallOddCtx.strokeStyle = '#ff0055';
+                wallOddCtx.lineWidth = 2;
+                wallOddCtx.beginPath();
+                wallOddCtx.moveTo(0, stripeY); wallOddCtx.lineTo(W, stripeY);
+                wallOddCtx.stroke();
+                // Scrolling text — offset cycles across the canvas width
+                const scrollX = ((wallAnimTime * 60) % (W * 2)) - W;
+                wallOddCtx.font = 'bold 52px Arial';
+                wallOddCtx.textBaseline = 'middle';
+                // Glow
+                wallOddCtx.shadowColor = '#ff0055';
+                wallOddCtx.shadowBlur = 18;
+                const grad = wallOddCtx.createLinearGradient(scrollX, 0, scrollX + W, 0);
+                grad.addColorStop(0, '#ff8800');
+                grad.addColorStop(0.5, '#ff0055');
+                grad.addColorStop(1, '#ff8800');
+                wallOddCtx.fillStyle = grad;
+                wallOddCtx.fillText('OUTRUN HORIZON', scrollX, H * 0.42);
+                // Second copy for seamless loop
+                wallOddCtx.fillText('OUTRUN HORIZON', scrollX + W * 2, H * 0.42);
+                wallOddCtx.shadowBlur = 0;
+                wallOddTex.needsUpdate = true;
+            }
+
+            if (wallEvenCtx && wallEvenTex) {
+                // Pulsing cyan ">" arrows on dark wall
+                wallEvenCtx.fillStyle = '#0d1b2a';
+                wallEvenCtx.fillRect(0, 0, W, H);
+                // Noise grain
+                for (let g = 0; g < 300; g++) {
+                    const bv = Math.floor(Math.random() * 40 + 20);
+                    wallEvenCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
+                    wallEvenCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+                }
+                // Pulse brightness
+                const pulse = 0.55 + 0.45 * Math.sin(wallAnimTime * 4);
+                const r = Math.floor(0 * pulse);
+                const g2 = Math.floor(255 * pulse);
+                const b2 = Math.floor(220 * pulse);
+                const glow = Math.floor(40 * pulse);
+                wallEvenCtx.shadowColor = `rgb(${r},${g2},${b2})`;
+                wallEvenCtx.shadowBlur = 20;
+                wallEvenCtx.fillStyle = `rgb(${r},${g2},${b2})`;
+                wallEvenCtx.font = 'bold 70px Arial';
+                wallEvenCtx.textBaseline = 'middle';
+                // Draw 4 arrows spaced across the canvas
+                const arrowSpacing = W / 4;
+                const arrowY = H / 2;
+                for (let a = 0; a < 5; a++) {
+                    // Each arrow pulses with a phase offset
+                    const phase = 0.55 + 0.45 * Math.sin(wallAnimTime * 4 - a * 0.8);
+                    const rA = 0, gA = Math.floor(255 * phase), bA = Math.floor(220 * phase);
+                    wallEvenCtx.fillStyle = `rgb(${rA},${gA},${bA})`;
+                    wallEvenCtx.shadowColor = `rgb(${rA},${gA},${bA})`;
+                    wallEvenCtx.fillText('>', a * arrowSpacing + 12, arrowY);
+                }
+                wallEvenCtx.shadowBlur = 0;
+                wallEvenTex.needsUpdate = true;
+            }
 
             // Dual Pass Rendering (Main + Minimap)
             renderer.setScissorTest(true);
