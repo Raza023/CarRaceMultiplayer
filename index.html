@@ -184,7 +184,8 @@
             S / Down Arrow : Brake / Reverse<br>
             A / Left Arrow : Steer Left<br>
             D / Right Arrow : Steer Right<br>
-            Space : Handbrake
+            Space : Handbrake<br>
+            Q : Respawn on Road
         </div>
     </div>
 
@@ -200,7 +201,11 @@
         let time = 0;
 
         // Input Map
-        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false };
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false, q: false };
+        
+        // Store track centre points and yaw angles for Q respawn
+        const trackPoints = [];
+        const trackYaws = [];
 
         // --- PROCEDURAL TEXTURES (FOR REALISM) ---
         function createNoiseTexture(width, height, scale, intensity, colorA, colorB) {
@@ -492,6 +497,10 @@
                     window.trackStartYaw = yaw;
                 }
 
+                // Store track centre + yaw for Q respawn
+                trackPoints.push({ x: midX, z: midZ });
+                trackYaws.push(yaw);
+
                 // Smooth Road Segment
                 const roadGeo = new THREE.BoxGeometry(localWidth, 0.2, dist + 1.5);
                 const roadMesh = new THREE.Mesh(roadGeo, roadMat);
@@ -500,26 +509,47 @@
                 roadMesh.receiveShadow = true;
                 scene.add(roadMesh);
 
+                // Perpendicular (normal) direction: points left/right of road
                 const nx = Math.cos(yaw);
                 const nz = -Math.sin(yaw);
 
+                const wallThick = 2.5;  // thickness of wall
+                const wallHeight = 3.0;
+                const wallHalfThick = wallThick / 2;
+                const wallHalfH = wallHeight / 2;
+                const wallHalfLen = dist / 2 + 0.75;
+
                 for (let side of [1, -1]) {
-                    const wallX = midX + nx * side * (localWidth / 2 + 1);
-                    const wallZ = midZ + nz * side * (localWidth / 2 + 1);
-                    
-                    const isNeon = i % 10 === 0;
-                    const wGeo = new THREE.BoxGeometry(1.5, 3, dist + 1);
-                    const wMesh = new THREE.Mesh(wGeo, isNeon ? neonMat : wallMat);
-                    wMesh.position.set(wallX, 1.5, wallZ);
+                    // Inner face of wall flush with road edge
+                    const wallInnerX = midX + nx * side * (localWidth / 2);
+                    const wallInnerZ = midZ + nz * side * (localWidth / 2);
+                    // Wall centre offset outward by half its thickness
+                    const wallX = wallInnerX + nx * side * wallHalfThick;
+                    const wallZ = wallInnerZ + nz * side * wallHalfThick;
+
+                    // Flat concrete wall — same material both sides, no neon banding on road face
+                    const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 1.5);
+                    const wMesh = new THREE.Mesh(wGeo, wallMat);
+                    wMesh.position.set(wallX, wallHalfH, wallZ);
                     wMesh.rotation.y = yaw;
                     wMesh.castShadow = true;
                     wMesh.receiveShadow = true;
                     scene.add(wMesh);
 
-                    const wallShape = new CANNON.Box(new CANNON.Vec3(0.75, 1.5, dist / 2 + 0.5));
+                    // Neon accent strip on TOP of every 10th wall segment (not inner face)
+                    if (i % 10 === 0) {
+                        const accentGeo = new THREE.BoxGeometry(wallThick + 0.05, 0.15, dist + 1.5);
+                        const accent = new THREE.Mesh(accentGeo, neonMat);
+                        accent.position.set(wallX, wallHeight + 0.07, wallZ);
+                        accent.rotation.y = yaw;
+                        scene.add(accent);
+                    }
+
+                    // Physics wall — snug against road edge
+                    const wallShape = new CANNON.Box(new CANNON.Vec3(wallHalfThick, wallHalfH, wallHalfLen));
                     const wBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
                     wBody.addShape(wallShape);
-                    wBody.position.set(wallX, 1.5, wallZ);
+                    wBody.position.set(wallX, wallHalfH, wallZ);
                     const q = new CANNON.Quaternion();
                     q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
                     wBody.quaternion.copy(q);
@@ -563,6 +593,9 @@
             initialQ.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), window.trackStartYaw || 0);
             carChassisBody.quaternion.copy(initialQ);
             carChassisBody.angularVelocity.set(0, 0, 0);
+            // Damping for smooth movement — prevents spinning and sliding out
+            carChassisBody.linearDamping = 0.3;
+            carChassisBody.angularDamping = 0.6;
 
             // --- PHOTOREALISTIC VISUAL CHASSIS (Supercar) ---
             carVisMesh = new THREE.Group();
@@ -783,14 +816,39 @@
             });
         }
 
+        function respawnOnRoad() {
+            if (!carChassisBody || trackPoints.length === 0) return;
+            // Find nearest track centre point
+            const cx = carChassisBody.position.x;
+            const cz = carChassisBody.position.z;
+            let bestIdx = 0;
+            let bestDist = Infinity;
+            for (let i = 0; i < trackPoints.length; i++) {
+                const dx = trackPoints[i].x - cx;
+                const dz = trackPoints[i].z - cz;
+                const d = dx*dx + dz*dz;
+                if (d < bestDist) { bestDist = d; bestIdx = i; }
+            }
+            const tp = trackPoints[bestIdx];
+            const yaw = trackYaws[bestIdx];
+            carChassisBody.position.set(tp.x, 1.5, tp.z);
+            carChassisBody.velocity.set(0, 0, 0);
+            carChassisBody.angularVelocity.set(0, 0, 0);
+            const rq = new CANNON.Quaternion();
+            rq.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
+            carChassisBody.quaternion.copy(rq);
+        }
+
         function setupControls() {
             window.addEventListener('keydown', (e) => {
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+                if (e.key === 'q' || e.key === 'Q') respawnOnRoad();
             });
             window.addEventListener('keyup', (e) => {
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
             });
             
+            // Respawn button — unflip only (lifts car upright at current position)
             document.getElementById('respawn-btn').addEventListener('click', () => {
                 if(!carChassisBody) return;
                 const currentPos = carChassisBody.position;
@@ -824,9 +882,9 @@
             const dt = (now - lastTime) / 1000;
             lastTime = now;
 
-            const maxSteerVal = 0.5;
-            const maxForce = 5000; // Ridiculous supercar speeds
-            const brakeForce = 100; // Stronger drift brake
+            const maxSteerVal = 0.7;   // Sharper turning
+            const maxForce = 10000;      // Faster acceleration
+            const brakeForce = 80;      // Smooth braking
 
             let engineForce = 0;
             let brakeValue = 0;
