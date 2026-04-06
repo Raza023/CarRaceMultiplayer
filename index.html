@@ -202,8 +202,8 @@
         let time = 0;
 
         // Animated wall textures
-        let wallOddTex, wallEvenTex;
-        let wallOddCtx, wallEvenCtx;
+        let wallOddTex, wallEvenTex, wallEvenRightTex;
+        let wallOddCtx, wallEvenCtx, wallEvenRightCtx;
         let wallAnimTime = 0;
 
         // Input Map
@@ -471,7 +471,7 @@
                 map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
             });
 
-            // EVEN walls: pulsing ">>>" direction arrows
+            // EVEN walls: pulsing ">" direction arrows — LEFT side (side = 1)
             const evenCanvas = document.createElement('canvas');
             evenCanvas.width = W; evenCanvas.height = H;
             wallEvenCtx = evenCanvas.getContext('2d');
@@ -479,6 +479,16 @@
             wallEvenTex.wrapS = THREE.RepeatWrapping;
             const evenWallMat = new THREE.MeshStandardMaterial({
                 map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            });
+
+            // EVEN walls: pulsing "<" direction arrows — RIGHT side (side = -1)
+            const evenRightCanvas = document.createElement('canvas');
+            evenRightCanvas.width = W; evenRightCanvas.height = H;
+            wallEvenRightCtx = evenRightCanvas.getContext('2d');
+            wallEvenRightTex = new THREE.CanvasTexture(evenRightCanvas);
+            wallEvenRightTex.wrapS = THREE.RepeatWrapping;
+            const evenWallMatRight = new THREE.MeshStandardMaterial({
+                map: wallEvenRightTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
             });
 
             // Office/Sci-fi abstract building generation
@@ -556,9 +566,14 @@
                     const wallX = wallInnerX + nx * side * wallHalfThick;
                     const wallZ = wallInnerZ + nz * side * wallHalfThick;
 
-                    // Flat wall — odd segments show "OUTRUN HORIZON", even show ">>>"
+                    // Flat wall — odd: "OUTRUN HORIZON", even left: ">", even right: "<"
                     const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 1.5);
-                    const chosenMat = (i % 2 === 1) ? oddWallMat : evenWallMat;
+                    let chosenMat;
+                    if (i % 2 === 1) {
+                        chosenMat = oddWallMat;
+                    } else {
+                        chosenMat = (side === 1) ? evenWallMat : evenWallMatRight;
+                    }
                     const wMesh = new THREE.Mesh(wGeo, chosenMat);
                     wMesh.position.set(wallX, wallHalfH, wallZ);
                     wMesh.rotation.y = yaw;
@@ -1024,16 +1039,14 @@
             }
 
             if (wallEvenCtx && wallEvenTex) {
-                // Pulsing cyan ">" arrows on dark wall
+                // Pulsing cyan ">" arrows on dark wall — LEFT wall
                 wallEvenCtx.fillStyle = '#0d1b2a';
                 wallEvenCtx.fillRect(0, 0, W, H);
-                // Noise grain
                 for (let g = 0; g < 300; g++) {
                     const bv = Math.floor(Math.random() * 40 + 20);
                     wallEvenCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
                     wallEvenCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
                 }
-                // Pulse brightness
                 const pulse = 0.55 + 0.45 * Math.sin(wallAnimTime * 4);
                 const r = Math.floor(0 * pulse);
                 const g2 = Math.floor(255 * pulse);
@@ -1044,11 +1057,9 @@
                 wallEvenCtx.fillStyle = `rgb(${r},${g2},${b2})`;
                 wallEvenCtx.font = 'bold 70px Arial';
                 wallEvenCtx.textBaseline = 'middle';
-                // Draw 4 arrows spaced across the canvas
                 const arrowSpacing = W / 4;
                 const arrowY = H / 2;
                 for (let a = 0; a < 5; a++) {
-                    // Each arrow pulses with a phase offset
                     const phase = 0.55 + 0.45 * Math.sin(wallAnimTime * 4 - a * 0.8);
                     const rA = 0, gA = Math.floor(255 * phase), bA = Math.floor(220 * phase);
                     wallEvenCtx.fillStyle = `rgb(${rA},${gA},${bA})`;
@@ -1057,6 +1068,35 @@
                 }
                 wallEvenCtx.shadowBlur = 0;
                 wallEvenTex.needsUpdate = true;
+            }
+
+            if (wallEvenRightCtx && wallEvenRightTex) {
+                // Pulsing cyan "<" arrows on dark wall — RIGHT wall
+                wallEvenRightCtx.fillStyle = '#0d1b2a';
+                wallEvenRightCtx.fillRect(0, 0, W, H);
+                for (let g = 0; g < 300; g++) {
+                    const bv = Math.floor(Math.random() * 40 + 20);
+                    wallEvenRightCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
+                    wallEvenRightCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+                }
+                const pulseR = 0.55 + 0.45 * Math.sin(wallAnimTime * 4);
+                const rR = 0, g2R = Math.floor(255 * pulseR), b2R = Math.floor(220 * pulseR);
+                wallEvenRightCtx.shadowColor = `rgb(${rR},${g2R},${b2R})`;
+                wallEvenRightCtx.shadowBlur = 20;
+                wallEvenRightCtx.fillStyle = `rgb(${rR},${g2R},${b2R})`;
+                wallEvenRightCtx.font = 'bold 70px Arial';
+                wallEvenRightCtx.textBaseline = 'middle';
+                const arrowSpacingR = W / 4;
+                const arrowYR = H / 2;
+                for (let a = 0; a < 5; a++) {
+                    const phase = 0.55 + 0.45 * Math.sin(wallAnimTime * 4 - a * 0.8);
+                    const rA = 0, gA = Math.floor(255 * phase), bA = Math.floor(220 * phase);
+                    wallEvenRightCtx.fillStyle = `rgb(${rA},${gA},${bA})`;
+                    wallEvenRightCtx.shadowColor = `rgb(${rA},${gA},${bA})`;
+                    wallEvenRightCtx.fillText('<', a * arrowSpacingR + 12, arrowYR);
+                }
+                wallEvenRightCtx.shadowBlur = 0;
+                wallEvenRightTex.needsUpdate = true;
             }
 
             // Dual Pass Rendering (Main + Minimap)
