@@ -123,7 +123,7 @@
             height: 240px;
             border-radius: 50%;
             border: 5px solid #ff0055;
-            background: radial-gradient(circle, rgba(20,0,10,0.4) 0%, rgba(0,0,0,0.8) 100%);
+            background: radial-gradient(circle, rgba(20, 0, 10, 0.4) 0%, rgba(0, 0, 0, 0.8) 100%);
             box-shadow: 0 0 50px rgba(255, 0, 85, 0.7), inset 0 0 40px rgba(255, 0, 85, 0.4);
             overflow: hidden;
             z-index: 100;
@@ -137,7 +137,7 @@
             height: 260px;
             border-radius: 50%;
             border: 5px solid #00f2ff;
-            background: radial-gradient(circle, rgba(50,75,100,0.7) 0%, rgba(10,20,30,0.95) 100%);
+            background: radial-gradient(circle, rgba(50, 75, 100, 0.7) 0%, rgba(10, 20, 30, 0.95) 100%);
             box-shadow: 0 0 50px rgba(0, 242, 255, 0.6), inset 0 0 40px rgba(0, 242, 255, 0.3);
             overflow: hidden;
             z-index: 100;
@@ -153,7 +153,7 @@
             left: 50%;
             transform: translateX(-50%);
             text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0,0,0,1);
+            text-shadow: 0 0 10px rgba(0, 0, 0, 1);
             filter: drop-shadow(0 0 5px #00f2ff);
         }
 
@@ -175,6 +175,7 @@
             border-radius: 30px;
             border-bottom: 2px solid #ff0055;
         }
+
         #turn-indicator.active {
             opacity: 1;
             transform: translate(-50%, -200px);
@@ -223,6 +224,7 @@
             gap: 8px;
             pointer-events: none;
         }
+
         #lap-counter {
             background: rgba(10, 15, 30, 0.78);
             backdrop-filter: blur(20px);
@@ -236,6 +238,7 @@
             color: #fff;
             text-shadow: 0 0 15px rgba(255, 100, 50, 0.8);
         }
+
         #race-timer {
             background: rgba(10, 15, 30, 0.7);
             backdrop-filter: blur(20px);
@@ -248,6 +251,7 @@
             color: #ffcc88;
             letter-spacing: 2px;
         }
+
         #countdown-overlay {
             position: absolute;
             top: 50%;
@@ -261,10 +265,13 @@
             transition: opacity 0.25s ease;
             line-height: 1;
         }
+
         #race-finish-overlay {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: rgba(0, 0, 10, 0.88);
             backdrop-filter: blur(8px);
             display: none;
@@ -274,6 +281,7 @@
             pointer-events: auto;
             z-index: 20;
         }
+
         #race-finish-overlay h2 {
             margin: 0 0 16px;
             font-size: 68px;
@@ -284,14 +292,16 @@
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         #finish-total-time {
             font-size: 42px;
             font-weight: 900;
             color: #fff;
             letter-spacing: 3px;
             margin-bottom: 6px;
-            text-shadow: 0 0 20px rgba(255,100,50,0.8);
+            text-shadow: 0 0 20px rgba(255, 100, 50, 0.8);
         }
+
         #finish-lap-times {
             font-size: 17px;
             color: #ffaa88;
@@ -300,6 +310,7 @@
             margin-bottom: 34px;
             letter-spacing: 1px;
         }
+
         #restart-race-btn {
             background: rgba(255, 100, 50, 0.15);
             border: 2px solid rgba(255, 100, 50, 0.7);
@@ -314,6 +325,7 @@
             transition: all 0.2s ease;
             pointer-events: auto;
         }
+
         #restart-race-btn:hover {
             background: rgba(255, 100, 50, 0.45);
             transform: scale(1.06);
@@ -476,7 +488,7 @@
             const m = Math.floor(ms / 60000);
             const s = Math.floor((ms % 60000) / 1000);
             const cs = Math.floor((ms % 1000) / 10);
-            return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
         }
 
         function init() {
@@ -543,8 +555,8 @@
             minimapCamera.lookAt(0, 0, 0);
             minimapCamera.layers.enable(1);
 
-            // Full Map Camera Setup (Wide range)
-            const fullMapSize = 2500;
+            // Full Map Camera Setup (Wide overview for 5km track)
+            const fullMapSize = 1250;
             fullMapCamera = new THREE.OrthographicCamera(-fullMapSize, fullMapSize, fullMapSize, -fullMapSize, 1, 500);
             fullMapCamera.position.set(0, 400, 0);
             fullMapCamera.lookAt(0, 0, 0);
@@ -645,11 +657,11 @@
             groundMesh.receiveShadow = true;
             scene.add(groundMesh);
 
-            // Create Closed Loop Track - SCALE TO EXACTLY 10KM
-            // Optimized density for performance (600 segments provides smooth curves while reducing draw calls)
+            // Create Closed Loop Track - SCALE TO EXACTLY 5KM
+            // L = 5000 => R = 795.8
             const roadWidth = 26;
             const segments = 600;
-            const baseRadius = 1591.5;
+            const baseRadius = 795.8;
 
             // PBR Road Materials
             const roadColorTex = createRoadColorMap();
@@ -751,15 +763,24 @@
             const points = [];
             for (let i = 0; i <= segments; i++) {
                 const t = (i / segments) * Math.PI * 2;
-                // Complex random-like winding sequence (Winding increases then stabilizes)
-                const windStart = 0.12; 
-                const windFactor = i/segments < windStart ? 0 : Math.min(1.0, (i/segments - windStart) * 2);
+                // Straight finish line: no winding for the first 10% and last 10%
+                const progress = i / segments;
+                const windStart = 0.1; 
+                const windEnd = 0.9;
+                
+                let windFactor = 0;
+                if (progress > windStart && progress < windEnd) {
+                    // Smoothly taper the winding in and out
+                    if (progress < windStart + 0.05) windFactor = (progress - windStart) / 0.05;
+                    else if (progress > windEnd - 0.05) windFactor = (windEnd - progress) / 0.05;
+                    else windFactor = 1.0;
+                }
                 
                 const noise = windFactor * (
-                    Math.sin(t * 7.5) * 160 + 
-                    Math.cos(t * 13.2) * 90 + 
-                    Math.sin(t * 26.8) * 45 +
-                    Math.cos(t * 3.4) * 50
+                    Math.sin(t * 7.5) * 110 + 
+                    Math.cos(t * 13.2) * 60 + 
+                    Math.sin(t * 26.8) * 30 +
+                    Math.cos(t * 3.4) * 35
                 );
                 const r = baseRadius + noise;
                 const x = Math.cos(t) * r;
@@ -883,10 +904,10 @@
 
             // --- PERFORMANCE: Merged Track Path for Maps (Layer 1 - Matte Black Overview) ---
             const curve = new THREE.CatmullRomCurve3(points, true);
-            const pathGeo = new THREE.TubeGeometry(curve, 400, 25, 8, true); 
+            const pathGeo = new THREE.TubeGeometry(curve, 400, 25, 8, true);
             // Render path as black for overview contrast
             const pathMesh = new THREE.Mesh(pathGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-            pathMesh.layers.set(1); 
+            pathMesh.layers.set(1);
             scene.add(pathMesh);
         }
 
@@ -1179,11 +1200,11 @@
             }
 
             // Minimap Arrow Marker (For Precision Proximity Map)
-            const arrowGeo = new THREE.ConeGeometry(25, 60, 32); 
+            const arrowGeo = new THREE.ConeGeometry(25, 60, 32);
             arrowGeo.rotateX(Math.PI / 2);
             const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
             const minimapArrow = new THREE.Mesh(arrowGeo, arrowMat);
-            minimapArrow.position.set(0, 30, 0); 
+            minimapArrow.position.set(0, 30, 0);
             minimapArrow.layers.set(1); // Seen on Proximity Map
             carVisMesh.add(minimapArrow);
 
@@ -1481,7 +1502,7 @@
 
             // --- ANIMATE WALL TEXTURES (PERFORMANCE OPTIMIZED) ---
             wallAnimTime += dt;
-            
+
             // Texture scrolling instead of canvas redraw
             if (oddWallMat.map) {
                 oddWallMat.map.offset.x -= 0.15 * dt;
@@ -1526,7 +1547,7 @@
             renderer.setScissorTest(true);
 
             // 1. Main View (Everything on Layer 0)
-            camera.layers.set(0); 
+            camera.layers.set(0);
             renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
             renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
             renderer.render(scene, camera);
