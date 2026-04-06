@@ -117,19 +117,70 @@
 
         #minimap-container {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 200px;
-            height: 200px;
-            border-radius: 10px;
-            border: 2px solid rgba(255, 100, 50, 0.5);
-            background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.9);
+            top: 25px;
+            right: 25px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            border: 4px solid #ff0055;
+            background: radial-gradient(circle, rgba(20,0,10,0.4) 0%, rgba(0,0,0,0.8) 100%);
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.5), inset 0 0 30px rgba(255, 0, 85, 0.2);
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #full-map-container {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            border: 4px solid #00f2ff;
+            background: radial-gradient(circle, rgba(0,10,20,0.4) 0%, rgba(0,0,0,0.8) 100%);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.5), inset 0 0 30px rgba(0, 242, 255, 0.2);
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .map-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.7);
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-transform: uppercase;
+        }
+
+        #turn-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -180px);
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 0, 85, 1);
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 25px;
+            border-radius: 30px;
+            border-bottom: 2px solid #ff0055;
+        }
+        #turn-indicator.active {
+            opacity: 1;
+            transform: translate(-50%, -200px);
         }
 
         #respawn-btn {
             position: absolute;
-            top: 20px;
+            top: 290px;
             left: 20px;
             background: rgba(40, 10, 10, 0.7);
             backdrop-filter: blur(15px);
@@ -280,7 +331,13 @@
         <div id="top-bar">
             <h1>OUTRUN HORIZON</h1>
         </div>
-        <div id="minimap-container"></div>
+        <div id="full-map-container">
+            <div class="map-label">Track Overview</div>
+        </div>
+        <div id="minimap-container">
+            <div class="map-label">Proximity Radar</div>
+        </div>
+        <div id="turn-indicator">STAY LEFT</div>
         <div id="speedometer">
             <span class="label">SPEED</span>
             <div class="value-container">
@@ -316,15 +373,17 @@
     <script>
         // --- GAME STATE & CONSTANTS ---
         const uiSpeedValue = document.getElementById('speed-value');
-        let scene, camera, renderer, minimapCamera;
+        let scene, camera, renderer, minimapCamera, fullMapCamera;
         let world, physicsMaterial;
         let carChassisBody, carVehicle;
         let carVisMesh, wheelVisMeshes = [];
         let time = 0;
 
-        // Animated wall textures
-        let wallOddTex, wallEvenTex, wallEvenRightTex;
-        let wallOddCtx, wallEvenCtx, wallEvenRightCtx;
+        // Texture dimensions
+        const WALL_TEX_W = 512, WALL_TEX_H = 128;
+
+        // Animated wall materials
+        let oddWallMat, evenWallMat, evenWallMatRight;
         let wallAnimTime = 0;
 
         // ===== RACE STATE =====
@@ -475,12 +534,19 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-            // Minimap Camera Setup
+            // Minimap Camera Setup (Close range)
             const mapSize = 100;
             minimapCamera = new THREE.OrthographicCamera(-mapSize, mapSize, mapSize, -mapSize, 1, 500);
-            minimapCamera.position.y = 200;
+            minimapCamera.position.set(0, 200, 0);
             minimapCamera.lookAt(0, 0, 0);
             minimapCamera.layers.enable(1);
+
+            // Full Map Camera Setup (Wide range)
+            const fullMapSize = 2500;
+            fullMapCamera = new THREE.OrthographicCamera(-fullMapSize, fullMapSize, fullMapSize, -fullMapSize, 1, 500);
+            fullMapCamera.position.set(0, 400, 0);
+            fullMapCamera.lookAt(0, 0, 0);
+            fullMapCamera.layers.enable(1);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -577,10 +643,11 @@
             groundMesh.receiveShadow = true;
             scene.add(groundMesh);
 
-            // Create Closed Loop Track - SCALE TO ~10KM
+            // Create Closed Loop Track - SCALE TO EXACTLY 10KM
+            // Optimized density for performance (600 segments provides smooth curves while reducing draw calls)
             const roadWidth = 26;
-            const segments = 2000;
-            const baseRadius = 1550;
+            const segments = 600;
+            const baseRadius = 1591.5;
 
             // PBR Road Materials
             const roadColorTex = createRoadColorMap();
@@ -604,34 +671,71 @@
             // --- ANIMATED WALL TEXTURES ---
             const W = 512, H = 128;
 
-            // ODD walls: scrolling "OUTRUN HORIZON"
+            // --- STATIC WALL TEXTURES (Animated via Material properties) ---
+
+            // ODD walls: Scrolling "OUTRUN HORIZON"
             const oddCanvas = document.createElement('canvas');
-            oddCanvas.width = W; oddCanvas.height = H;
-            wallOddCtx = oddCanvas.getContext('2d');
-            wallOddTex = new THREE.CanvasTexture(oddCanvas);
+            oddCanvas.width = WALL_TEX_W; oddCanvas.height = WALL_TEX_H;
+            const oCtx = oddCanvas.getContext('2d');
+            oCtx.fillStyle = '#1a1a2e';
+            oCtx.fillRect(0, 0, WALL_TEX_W, WALL_TEX_H);
+            for (let g = 0; g < 300; g++) {
+                const bv = Math.floor(Math.random() * 40 + 30);
+                oCtx.fillStyle = `rgba(${bv},${bv},${bv},0.3)`;
+                oCtx.fillRect(Math.random() * WALL_TEX_W, Math.random() * WALL_TEX_H, 2, 2);
+            }
+            oCtx.strokeStyle = '#ff0055';
+            oCtx.lineWidth = 2;
+            oCtx.beginPath(); oCtx.moveTo(0, WALL_TEX_H * 0.72); oCtx.lineTo(WALL_TEX_W, WALL_TEX_H * 0.72); oCtx.stroke();
+            oCtx.font = 'bold 52px Arial'; oCtx.textBaseline = 'middle'; oCtx.textAlign = 'center';
+            oCtx.shadowColor = '#ff0055'; oCtx.shadowBlur = 18;
+            oCtx.fillStyle = '#ff4400';
+            oCtx.fillText('OUTRUN HORIZON', WALL_TEX_W / 2, WALL_TEX_H * 0.42);
+            const wallOddTex = new THREE.CanvasTexture(oddCanvas);
             wallOddTex.wrapS = THREE.RepeatWrapping;
-            const oddWallMat = new THREE.MeshStandardMaterial({
-                map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            oddWallMat = new THREE.MeshStandardMaterial({
+                map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0xff0055, emissiveIntensity: 0.2
             });
 
-            // EVEN walls: pulsing ">" direction arrows — LEFT side (side = 1)
+            // EVEN walls: Pulsing direction arrows
             const evenCanvas = document.createElement('canvas');
-            evenCanvas.width = W; evenCanvas.height = H;
-            wallEvenCtx = evenCanvas.getContext('2d');
-            wallEvenTex = new THREE.CanvasTexture(evenCanvas);
+            evenCanvas.width = WALL_TEX_W; evenCanvas.height = WALL_TEX_H;
+            const eCtx = evenCanvas.getContext('2d');
+            eCtx.fillStyle = '#0d1b2a';
+            eCtx.fillRect(0, 0, WALL_TEX_W, WALL_TEX_H);
+            for (let g = 0; g < 300; g++) {
+                const bv = Math.floor(Math.random() * 40 + 20);
+                eCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
+                eCtx.fillRect(Math.random() * WALL_TEX_W, Math.random() * WALL_TEX_H, 2, 2);
+            }
+            eCtx.font = 'bold 70px Arial'; eCtx.textBaseline = 'middle'; eCtx.textAlign = 'center';
+            eCtx.fillStyle = '#00ffee';
+            const arrowSpacing = WALL_TEX_W / 4;
+            for (let a = 0; a < 4; a++) eCtx.fillText('>', (a + 0.5) * arrowSpacing, WALL_TEX_H / 2);
+            const wallEvenTex = new THREE.CanvasTexture(evenCanvas);
             wallEvenTex.wrapS = THREE.RepeatWrapping;
-            const evenWallMat = new THREE.MeshStandardMaterial({
-                map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            evenWallMat = new THREE.MeshStandardMaterial({
+                map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0
             });
 
-            // EVEN walls: pulsing "<" direction arrows — RIGHT side (side = -1)
+            // EVEN RIGHT walls: Reverse direction arrows
             const evenRightCanvas = document.createElement('canvas');
-            evenRightCanvas.width = W; evenRightCanvas.height = H;
-            wallEvenRightCtx = evenRightCanvas.getContext('2d');
-            wallEvenRightTex = new THREE.CanvasTexture(evenRightCanvas);
+            evenRightCanvas.width = WALL_TEX_W; evenRightCanvas.height = WALL_TEX_H;
+            const erCtx = evenRightCanvas.getContext('2d');
+            erCtx.fillStyle = '#0d1b2a';
+            erCtx.fillRect(0, 0, WALL_TEX_W, WALL_TEX_H);
+            for (let g = 0; g < 300; g++) {
+                const bv = Math.floor(Math.random() * 40 + 20);
+                erCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
+                erCtx.fillRect(Math.random() * WALL_TEX_W, Math.random() * WALL_TEX_H, 2, 2);
+            }
+            erCtx.font = 'bold 70px Arial'; erCtx.textBaseline = 'middle'; erCtx.textAlign = 'center';
+            erCtx.fillStyle = '#00ffee';
+            for (let a = 0; a < 4; a++) erCtx.fillText('<', (a + 0.5) * arrowSpacing, WALL_TEX_H / 2);
+            const wallEvenRightTex = new THREE.CanvasTexture(evenRightCanvas);
             wallEvenRightTex.wrapS = THREE.RepeatWrapping;
-            const evenWallMatRight = new THREE.MeshStandardMaterial({
-                map: wallEvenRightTex, roughness: 0.5, metalness: 0.5, emissive: 0x000000
+            evenWallMatRight = new THREE.MeshStandardMaterial({
+                map: wallEvenRightTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0
             });
 
             // Office/Sci-fi abstract building generation
@@ -645,7 +749,14 @@
             const points = [];
             for (let i = 0; i <= segments; i++) {
                 const t = (i / segments) * Math.PI * 2;
-                const r = baseRadius + Math.sin(t * 3) * 60 + Math.cos(t * 5) * 40 + Math.sin(t * 10) * 15;
+                // Add winding turns after 15% distance (after start line)
+                const windingPhase = Math.max(0, (i / segments - 0.15) * 1.2);
+                const noise = windingPhase * (
+                    Math.sin(t * 8) * 140 + 
+                    Math.cos(t * 14) * 80 + 
+                    Math.sin(t * 22) * 30
+                );
+                const r = baseRadius + noise;
                 const x = Math.cos(t) * r;
                 const z = -Math.sin(t) * r;
                 points.push(new THREE.Vector3(x, 0, z));
@@ -764,6 +875,13 @@
                     }
                 }
             }
+
+            // --- PERFORMANCE: Merged Track Path for Maps (Layer 1 - Thick Mesh Path) ---
+            const curve = new THREE.CatmullRomCurve3(points, true);
+            const pathGeo = new THREE.TubeGeometry(curve, 300, 15, 8, true); // Thick tube (15m radius)
+            const pathMesh = new THREE.Mesh(pathGeo, new THREE.MeshBasicMaterial({ color: 0x00f2ff }));
+            pathMesh.layers.set(1); // ONLY visible on maps
+            scene.add(pathMesh);
         }
 
         // ===== FINISH LINE =====
@@ -1054,12 +1172,12 @@
                 carVisMesh.add(hdLight);
             }
 
-            // Minimap Arrow Marker (Only visible on Layer 1)
-            const arrowGeo = new THREE.ConeGeometry(5, 12, 3);
+            // Minimap Arrow Marker (Large and Neon for Map Prominence)
+            const arrowGeo = new THREE.ConeGeometry(50, 120, 32); // 10x larger for full map visibility
             arrowGeo.rotateX(Math.PI / 2);
             const arrowMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
             const minimapArrow = new THREE.Mesh(arrowGeo, arrowMat);
-            minimapArrow.position.set(0, 20, 0);
+            minimapArrow.position.set(0, 50, 0); // Raise higher to clear path meshes
             minimapArrow.layers.set(1);
             carVisMesh.add(minimapArrow);
 
@@ -1310,11 +1428,14 @@
             minimapCamera.position.z = carChassisBody.position.z;
             minimapCamera.lookAt(minimapCamera.position.x, 0, minimapCamera.position.z);
 
-            const speed = carChassisBody.velocity.length() * 3.6;
+            const speed = Math.round(carChassisBody.velocity.length() * 3.6);
             const forwardVec = new CANNON.Vec3(0, 0, 1);
             carChassisBody.vectorToWorldFrame(forwardVec, forwardVec);
             const direction = carChassisBody.velocity.dot(forwardVec) > 0 ? 1 : -1;
-            uiSpeedValue.innerText = Math.round(speed * direction);
+            const finalSpeed = speed * direction;
+            if (uiSpeedValue.innerText != finalSpeed) {
+                uiSpeedValue.innerText = finalSpeed;
+            }
 
             // ===== RACE TICK =====
             if (raceState === 'racing') {
@@ -1344,118 +1465,71 @@
                 }
             }
 
-            // --- ANIMATE WALL TEXTURES ---
+            // --- ANIMATE WALL TEXTURES (PERFORMANCE OPTIMIZED) ---
             wallAnimTime += dt;
-            const W = 512, H = 128;
-
-            if (wallOddCtx && wallOddTex) {
-                // Scrolling neon "OUTRUN HORIZON" on dark concrete
-                wallOddCtx.fillStyle = '#1a1a2e';
-                wallOddCtx.fillRect(0, 0, W, H);
-                // Noise grain
-                for (let g = 0; g < 300; g++) {
-                    const bv = Math.floor(Math.random() * 40 + 30);
-                    wallOddCtx.fillStyle = `rgba(${bv},${bv},${bv},0.3)`;
-                    wallOddCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
-                }
-                // Horizontal neon stripe
-                const stripeY = H * 0.72;
-                wallOddCtx.strokeStyle = '#ff0055';
-                wallOddCtx.lineWidth = 2;
-                wallOddCtx.beginPath();
-                wallOddCtx.moveTo(0, stripeY); wallOddCtx.lineTo(W, stripeY);
-                wallOddCtx.stroke();
-                // Scrolling text — offset cycles across the canvas width
-                const scrollX = ((wallAnimTime * 60) % (W * 2)) - W;
-                wallOddCtx.font = 'bold 52px Arial';
-                wallOddCtx.textBaseline = 'middle';
-                // Glow
-                wallOddCtx.shadowColor = '#ff0055';
-                wallOddCtx.shadowBlur = 18;
-                const grad = wallOddCtx.createLinearGradient(scrollX, 0, scrollX + W, 0);
-                grad.addColorStop(0, '#ff8800');
-                grad.addColorStop(0.5, '#ff0055');
-                grad.addColorStop(1, '#ff8800');
-                wallOddCtx.fillStyle = grad;
-                wallOddCtx.fillText('OUTRUN HORIZON', scrollX, H * 0.42);
-                // Second copy for seamless loop
-                wallOddCtx.fillText('OUTRUN HORIZON', scrollX + W * 2, H * 0.42);
-                wallOddCtx.shadowBlur = 0;
-                wallOddTex.needsUpdate = true;
+            
+            // Texture scrolling instead of canvas redraw
+            if (oddWallMat.map) {
+                oddWallMat.map.offset.x -= 0.15 * dt;
+                oddWallMat.emissiveIntensity = 0.4 + 0.3 * Math.sin(wallAnimTime * 2.5);
+            }
+            if (evenWallMat) {
+                evenWallMat.emissiveIntensity = 0.5 + 0.5 * Math.sin(wallAnimTime * 4);
+            }
+            if (evenWallMatRight) {
+                evenWallMatRight.emissiveIntensity = 0.5 + 0.5 * Math.sin(wallAnimTime * 4);
             }
 
-            if (wallEvenCtx && wallEvenTex) {
-                // Pulsing cyan ">" arrows on dark wall — LEFT wall
-                wallEvenCtx.fillStyle = '#0d1b2a';
-                wallEvenCtx.fillRect(0, 0, W, H);
-                for (let g = 0; g < 300; g++) {
-                    const bv = Math.floor(Math.random() * 40 + 20);
-                    wallEvenCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
-                    wallEvenCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+            // --- TURN INDICATOR LOGIC ---
+            if (raceState === 'racing' && trackYaws.length > 0) {
+                // Find nearest track point
+                const cx = carChassisBody.position.x;
+                const cz = carChassisBody.position.z;
+                let bestIdx = 0; let bestDist = Infinity;
+                for (let i = 0; i < trackPoints.length; i += 10) { // optimization
+                    const d = Math.pow(trackPoints[i].x - cx, 2) + Math.pow(trackPoints[i].z - cz, 2);
+                    if (d < bestDist) { bestDist = d; bestIdx = i; }
                 }
-                const pulse = 0.55 + 0.45 * Math.sin(wallAnimTime * 4);
-                const r = Math.floor(0 * pulse);
-                const g2 = Math.floor(255 * pulse);
-                const b2 = Math.floor(220 * pulse);
-                const glow = Math.floor(40 * pulse);
-                wallEvenCtx.shadowColor = `rgb(${r},${g2},${b2})`;
-                wallEvenCtx.shadowBlur = 20;
-                wallEvenCtx.fillStyle = `rgb(${r},${g2},${b2})`;
-                wallEvenCtx.font = 'bold 70px Arial';
-                wallEvenCtx.textBaseline = 'middle';
-                const arrowSpacing = W / 4;
-                const arrowY = H / 2;
-                for (let a = 0; a < 5; a++) {
-                    const phase = 0.55 + 0.45 * Math.sin(wallAnimTime * 4 - a * 0.8);
-                    const rA = 0, gA = Math.floor(255 * phase), bA = Math.floor(220 * phase);
-                    wallEvenCtx.fillStyle = `rgb(${rA},${gA},${bA})`;
-                    wallEvenCtx.shadowColor = `rgb(${rA},${gA},${bA})`;
-                    wallEvenCtx.fillText('>', a * arrowSpacing + 12, arrowY);
+
+                // Look ahead 15 segments (~75m)
+                const lookAheadIdx = (bestIdx + 15) % trackPoints.length;
+                const currentYaw = trackYaws[bestIdx];
+                const aheadYaw = trackYaws[lookAheadIdx];
+                let diff = aheadYaw - currentYaw;
+                if (diff > Math.PI) diff -= Math.PI * 2;
+                if (diff < -Math.PI) diff += Math.PI * 2;
+
+                const indicator = document.getElementById('turn-indicator');
+                if (Math.abs(diff) > 0.08) { // threshold for "turn approaching"
+                    indicator.textContent = diff > 0 ? "STAY LEFT" : "STAY RIGHT";
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
                 }
-                wallEvenCtx.shadowBlur = 0;
-                wallEvenTex.needsUpdate = true;
             }
 
-            if (wallEvenRightCtx && wallEvenRightTex) {
-                // Pulsing cyan "<" arrows on dark wall — RIGHT wall
-                wallEvenRightCtx.fillStyle = '#0d1b2a';
-                wallEvenRightCtx.fillRect(0, 0, W, H);
-                for (let g = 0; g < 300; g++) {
-                    const bv = Math.floor(Math.random() * 40 + 20);
-                    wallEvenRightCtx.fillStyle = `rgba(${bv},${bv},${bv + 40},0.3)`;
-                    wallEvenRightCtx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
-                }
-                const pulseR = 0.55 + 0.45 * Math.sin(wallAnimTime * 4);
-                const rR = 0, g2R = Math.floor(255 * pulseR), b2R = Math.floor(220 * pulseR);
-                wallEvenRightCtx.shadowColor = `rgb(${rR},${g2R},${b2R})`;
-                wallEvenRightCtx.shadowBlur = 20;
-                wallEvenRightCtx.fillStyle = `rgb(${rR},${g2R},${b2R})`;
-                wallEvenRightCtx.font = 'bold 70px Arial';
-                wallEvenRightCtx.textBaseline = 'middle';
-                const arrowSpacingR = W / 4;
-                const arrowYR = H / 2;
-                for (let a = 0; a < 5; a++) {
-                    const phase = 0.55 + 0.45 * Math.sin(wallAnimTime * 4 - a * 0.8);
-                    const rA = 0, gA = Math.floor(255 * phase), bA = Math.floor(220 * phase);
-                    wallEvenRightCtx.fillStyle = `rgb(${rA},${gA},${bA})`;
-                    wallEvenRightCtx.shadowColor = `rgb(${rA},${gA},${bA})`;
-                    wallEvenRightCtx.fillText('<', a * arrowSpacingR + 12, arrowYR);
-                }
-                wallEvenRightCtx.shadowBlur = 0;
-                wallEvenRightTex.needsUpdate = true;
-            }
-
-            // Dual Pass Rendering (Main + Minimap)
+            // Dual Pass Rendering (Main + Full Map + Minimap)
             renderer.setScissorTest(true);
 
+            // 1. Main View (Everything on Layer 0)
+            camera.layers.set(0); 
             renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
             renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
             renderer.render(scene, camera);
 
-            const minimapSize = 200;
-            const margin = 20;
-            renderer.setViewport(window.innerWidth - minimapSize - margin, window.innerHeight - minimapSize - margin, minimapSize, minimapSize);
-            renderer.setScissor(window.innerWidth - minimapSize - margin, window.innerHeight - minimapSize - margin, minimapSize, minimapSize);
+            const mSize = 240; // Prominent size
+            const margin = 25;
+
+            // 2. Full Map (Top Left - High Visibility)
+            fullMapCamera.layers.set(1); // Marker + Path Only
+            renderer.setViewport(margin, window.innerHeight - mSize - margin, mSize, mSize);
+            renderer.setScissor(margin, window.innerHeight - mSize - margin, mSize, mSize);
+            renderer.render(scene, fullMapCamera);
+
+            // 3. Minimap (Top Right - High Visibility)
+            minimapCamera.layers.set(1); // Marker + Path Only
+            renderer.setViewport(window.innerWidth - mSize - margin, window.innerHeight - mSize - margin, mSize, mSize);
+            renderer.setScissor(window.innerWidth - mSize - margin, window.innerHeight - mSize - margin, mSize, mSize);
             renderer.render(scene, minimapCamera);
 
             renderer.setScissorTest(false);
