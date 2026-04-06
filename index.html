@@ -579,24 +579,23 @@
 
             const envCtx = document.createElement('canvas').getContext('2d');
             envCtx.canvas.width = 1024; envCtx.canvas.height = 512;
+            // Beautiful Twilight City Sky
             const gradient = envCtx.createLinearGradient(0, 0, 0, 512);
-            gradient.addColorStop(0, '#2266aa'); // Deep blue sky
-            gradient.addColorStop(0.45, '#88ccff'); // Lighter horizon
-            gradient.addColorStop(0.5, '#ddf0ff'); // Horizon mist
-            gradient.addColorStop(0.51, '#112211'); // Dark Ground
+            gradient.addColorStop(0, '#1a0b2e'); // Deep night purple
+            gradient.addColorStop(0.3, '#4a148c'); // Vivid purple
+            gradient.addColorStop(0.5, '#ff7043'); // Orange horizon glow
+            gradient.addColorStop(0.51, '#0c120c'); // Dark ground
             envCtx.fillStyle = gradient;
             envCtx.fillRect(0, 0, 1024, 512);
 
-            // Draw clouds
-            envCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            for (let i = 0; i < 40; i++) {
+            // City Mist Glow
+            envCtx.fillStyle = 'rgba(255, 120, 50, 0.15)';
+            for (let i = 0; i < 60; i++) {
                 const cx = Math.random() * 1024;
-                const cy = Math.random() * 200;
-                const size = 30 + Math.random() * 60;
+                const cy = 200 + Math.random() * 80;
+                const size = 20 + Math.random() * 40;
                 envCtx.beginPath();
                 envCtx.arc(cx, cy, size, 0, Math.PI * 2);
-                envCtx.arc(cx + size * 0.8, cy - size * 0.2, size * 0.8, 0, Math.PI * 2);
-                envCtx.arc(cx + size * 1.2, cy + size * 0.1, size * 0.6, 0, Math.PI * 2);
                 envCtx.fill();
             }
 
@@ -632,6 +631,11 @@
             });
             world.addContactMaterial(contactMaterial);
         }
+
+        const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
+        const treeLeavesMat = new THREE.MeshStandardMaterial({ color: 0x0a3d0a, roughness: 1.0 });
+        const houseMat = new THREE.MeshStandardMaterial({ color: 0xc4c4c4, metalness: 0.2 });
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x8b0000 });
 
         function createEnvironment() {
             // Invisible ground collider
@@ -880,24 +884,46 @@
                     wBody.quaternion.copy(q);
                     world.addBody(wBody);
 
-                    // Scenery Buildings (Cyberpunk style)
-                    if (Math.random() < 0.15 && i % 3 === 0) {
-                        const offset = localWidth / 2 + 15 + Math.random() * 30;
-                        const objX = midX + nx * side * offset;
-                        const objZ = midZ + nz * side * offset;
-                        const h = 20 + Math.random() * 40;
+                    // FULL FLEDGE CITY FEELING (Buildings, Homes, Trees)
+                    const rand = Math.random();
+                    const offset = localWidth / 2 + 15 + Math.random() * 120;
+                    const objX = midX + nx * side * offset;
+                    const objZ = midZ + nz * side * offset;
 
-                        const building = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random() * 10, h, 10 + Math.random() * 10), bMat);
+                    if (rand < 0.2 && i % 4 === 0) {
+                        // TALL SKYSCRAPER
+                        const h = 40 + Math.random() * 80;
+                        const w = 15 + Math.random() * 15;
+                        const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), bMat);
                         building.position.set(objX, h / 2, objZ);
                         building.rotation.y = Math.random() * Math.PI;
                         building.castShadow = true;
                         building.receiveShadow = true;
                         scene.add(building);
-
-                        const hBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
-                        hBody.addShape(new CANNON.Box(new CANNON.Vec3(5, h / 2, 5)));
-                        hBody.position.set(objX, h / 2, objZ);
-                        world.addBody(hBody);
+                    } else if (rand < 0.4 && i % 3 === 0) {
+                        // INDIVIDUAL HOMES
+                        const houseGroup = new THREE.Group();
+                        const house = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 12), houseMat);
+                        house.position.y = 4;
+                        const roof = new THREE.Mesh(new THREE.ConeGeometry(8, 6, 4), roofMat);
+                        roof.position.y = 11;
+                        roof.rotation.y = Math.PI / 4;
+                        houseGroup.add(house);
+                        houseGroup.add(roof);
+                        houseGroup.position.set(objX, 0, objZ);
+                        houseGroup.rotation.y = Math.random() * Math.PI;
+                        scene.add(houseGroup);
+                    } else if (rand < 0.6 && i % 2 === 0) {
+                        // TREES
+                        const treeGroup = new THREE.Group();
+                        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 5), treeTrunkMat);
+                        trunk.position.y = 2.5;
+                        const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 12, 8), treeLeavesMat);
+                        leaves.position.y = 9;
+                        treeGroup.add(trunk);
+                        treeGroup.add(leaves);
+                        treeGroup.position.set(objX, 0, objZ);
+                        scene.add(treeGroup);
                     }
                 }
             }
