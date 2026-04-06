@@ -198,6 +198,11 @@
         let carChassisBody, carVehicle;
         let carVisMesh, wheelVisMeshes = [];
         let time = 0;
+        
+        // Track Constants
+        const baseRadius = 280;
+        const segments = 300;
+        const roadWidth = 26;
 
         // Input Map
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false };
@@ -424,9 +429,7 @@
             scene.add(groundMesh);
 
             // Create Closed Loop Track
-            const roadWidth = 26;
-            const segments = 300;
-            const baseRadius = 280;
+            // (baseRadius, segments, roadWidth moved to global scope)
             
             // PBR Road Materials
             const roadColorTex = createRoadColorMap();
@@ -508,18 +511,19 @@
                     const wallZ = midZ + nz * side * (localWidth / 2 + 1);
                     
                     const isNeon = i % 10 === 0;
-                    const wGeo = new THREE.BoxGeometry(1.5, 3, dist + 1);
+                    const wGeo = new THREE.BoxGeometry(1.5, 6, dist + 1); // Visually taller too
                     const wMesh = new THREE.Mesh(wGeo, isNeon ? neonMat : wallMat);
-                    wMesh.position.set(wallX, 1.5, wallZ);
+                    wMesh.position.set(wallX, 3.0, wallZ);
                     wMesh.rotation.y = yaw;
                     wMesh.castShadow = true;
                     wMesh.receiveShadow = true;
                     scene.add(wMesh);
 
-                    const wallShape = new CANNON.Box(new CANNON.Vec3(0.75, 1.5, dist / 2 + 0.5));
+                    // Physical Wall (Much taller and thicker to prevent escape)
+                    const wallShape = new CANNON.Box(new CANNON.Vec3(2.5, 10, dist / 2 + 0.5));
                     const wBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
                     wBody.addShape(wallShape);
-                    wBody.position.set(wallX, 1.5, wallZ);
+                    wBody.position.set(wallX, 10, wallZ);
                     const q = new CANNON.Quaternion();
                     q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
                     wBody.quaternion.copy(q);
@@ -815,7 +819,7 @@
         }
 
         const fixedTimeStep = 1.0 / 60.0;
-        const maxSubSteps = 3;
+        const maxSubSteps = 10; // Increased for better collision detection at high speeds
         let lastTime = performance.now();
 
         function animate(now) {
@@ -860,6 +864,28 @@
             carVehicle.setBrake(brakeValue, 3);
 
             world.step(fixedTimeStep, Math.min(dt, 0.1), maxSubSteps); // prevent physics blowout if tab pauses
+
+            // --- TRACK BOUNDARY AUTO-RECOVERY ---
+            // If the car somehow glitches through or jumps over walls, respawn it.
+            const carX = carChassisBody.position.x;
+            const carZ = carChassisBody.position.z;
+            const angle = Math.atan2(-carZ, carX);
+            const targetR = baseRadius + Math.sin(angle * 3) * 60 + Math.cos(angle * 5) * 40 + Math.sin(angle * 10) * 15;
+            const currentR = Math.sqrt(carX * carX + carZ * carZ);
+            
+            // Allow 40 units of deviation before forced respawn (road width is 26 to 55)
+            if (Math.abs(currentR - targetR) > 45 || carChassisBody.position.y < -5) {
+                // Respawn at nearest safe point on track
+                const targetX = Math.cos(angle) * targetR;
+                const targetZ = -Math.sin(angle) * targetR;
+                carChassisBody.position.set(targetX, 2, targetZ);
+                carChassisBody.velocity.set(0, 0, 0);
+                carChassisBody.angularVelocity.set(0, 0, 0);
+                // Align rotation roughly with track direction
+                const q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), angle + Math.PI/2);
+                carChassisBody.quaternion.copy(q);
+            }
 
             if (isRaining && rainSystem) {
                 const positions = rainSystem.geometry.attributes.position.array;
