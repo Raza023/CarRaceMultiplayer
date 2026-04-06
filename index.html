@@ -542,9 +542,9 @@
 
         function initGraphics() {
             scene = new THREE.Scene();
-            // Daylight foggy atmosphere
-            scene.background = new THREE.Color(0xaaccff);
-            scene.fog = new THREE.FogExp2(0xaaccff, 0.003);
+            // Daylight foggy atmosphere (Extended for clear city view)
+            scene.background = new THREE.Color(0x1a0b2e);
+            scene.fog = new THREE.FogExp2(0x1a0b2e, 0.0008);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -603,8 +603,8 @@
             envTex.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = pmremGenerator.fromEquirectangular(envTex).texture;
 
-            // Create massive Skydome directly instead of scene.background for better gradient
-            const skyGeo = new THREE.SphereGeometry(900, 32, 32);
+            // Create massive Skydome (Increased to 3000m to prevent road clipping)
+            const skyGeo = new THREE.SphereGeometry(3000, 32, 32);
             const skyMat = new THREE.MeshBasicMaterial({ map: envTex, side: THREE.BackSide, fog: false });
             const skyDome = new THREE.Mesh(skyGeo, skyMat);
             scene.add(skyDome);
@@ -886,7 +886,8 @@
 
                     // FULL FLEDGE CITY FEELING (Buildings, Homes, Trees)
                     const rand = Math.random();
-                    const offset = localWidth / 2 + 15 + Math.random() * 120;
+                    // Increased safety buffer (35m) to ensure no clipping on road
+                    const offset = localWidth / 2 + 35 + Math.random() * 120;
                     const objX = midX + nx * side * offset;
                     const objZ = midZ + nz * side * offset;
 
