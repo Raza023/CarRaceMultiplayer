@@ -677,7 +677,8 @@
                 map: roadColorTex,
                 normalMap: roadNormalTex,
                 roughness: 0.7,
-                metalness: 0.2 // Slightly reflective like asphalt at sunset
+                metalness: 0.2,
+                side: THREE.DoubleSide
             });
 
             // Realistic sci-fi concrete and metal barrier
@@ -712,7 +713,8 @@
             const wallOddTex = new THREE.CanvasTexture(oddCanvas);
             wallOddTex.wrapS = THREE.RepeatWrapping;
             oddWallMat = new THREE.MeshStandardMaterial({
-                map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0xff0055, emissiveIntensity: 0.2
+                map: wallOddTex, roughness: 0.5, metalness: 0.5, emissive: 0xff0055, emissiveIntensity: 0.2,
+                side: THREE.DoubleSide
             });
 
             // EVEN walls: Pulsing direction arrows
@@ -733,7 +735,8 @@
             const wallEvenTex = new THREE.CanvasTexture(evenCanvas);
             wallEvenTex.wrapS = THREE.RepeatWrapping;
             evenWallMat = new THREE.MeshStandardMaterial({
-                map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0
+                map: wallEvenTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0,
+                side: THREE.DoubleSide
             });
 
             // EVEN RIGHT walls: Reverse direction arrows
@@ -753,7 +756,8 @@
             const wallEvenRightTex = new THREE.CanvasTexture(evenRightCanvas);
             wallEvenRightTex.wrapS = THREE.RepeatWrapping;
             evenWallMatRight = new THREE.MeshStandardMaterial({
-                map: wallEvenRightTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0
+                map: wallEvenRightTex, roughness: 0.5, metalness: 0.5, emissive: 0x00ffee, emissiveIntensity: 1.0,
+                side: THREE.DoubleSide
             });
 
             // Office/Sci-fi abstract building generation
@@ -767,14 +771,11 @@
             const points = [];
             for (let i = 0; i <= segments; i++) {
                 const t = (i / segments) * Math.PI * 2;
-                // Straight finish line: no winding for the first 10% and last 10%
                 const progress = i / segments;
                 const windStart = 0.1;
                 const windEnd = 0.9;
-
                 let windFactor = 0;
                 if (progress > windStart && progress < windEnd) {
-                    // Smoothly taper the winding in and out
                     if (progress < windStart + 0.05) windFactor = (progress - windStart) / 0.05;
                     else if (progress > windEnd - 0.05) windFactor = (windEnd - progress) / 0.05;
                     else windFactor = 1.0;
@@ -787,144 +788,138 @@
                     Math.cos(t * 3.4) * 35
                 );
                 const r = baseRadius + noise;
-                const x = Math.cos(t) * r;
-                const z = -Math.sin(t) * r;
-                points.push(new THREE.Vector3(x, 0, z));
+                points.push(new THREE.Vector3(Math.cos(t) * r, 0, -Math.sin(t) * r));
             }
 
+            // --- Helper: Generate skewed wall segment (gapless) ---
+            function createWallSegment(pS, pE, nS_x, nS_z, nE_x, nE_z, side, height, thick, mat) {
+                const geo = new THREE.BufferGeometry();
+                const h = new THREE.Vector3(0, height, 0);
+                const iS = pS.clone(), iE = pE.clone(); 
+                const oS = pS.clone().add(new THREE.Vector3(nS_x * side * thick, 0, nS_z * side * thick));
+                const oE = pE.clone().add(new THREE.Vector3(nE_x * side * thick, 0, nE_z * side * thick));
+                
+                const verts = [];
+                const uvs = [];
+                const addQuad = (v1, v2, v3, v4) => {
+                    verts.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z);
+                    verts.push(v1.x, v1.y, v1.z, v3.x, v3.y, v3.z, v4.x, v4.y, v4.z);
+                    uvs.push(0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1);
+                };
+                
+                // (1) Inner Face (Facing the road)
+                if (side === 1) addQuad(iS, iE, iE.clone().add(h), iS.clone().add(h));
+                else addQuad(iE, iS, iS.clone().add(h), iE.clone().add(h));
+                
+                // (2) Top Face
+                addQuad(iS.clone().add(h), iE.clone().add(h), oE.clone().add(h), oS.clone().add(h));
+                
+                // (3) Outer Face (Facing world)
+                if (side === 1) addQuad(oE, oS, oS.clone().add(h), oE.clone().add(h));
+                else addQuad(oS, oE, oE.clone().add(h), oS.clone().add(h));
+                
+                // (4) Bottom Face (Floor)
+                addQuad(iE, iS, oS, oE);
+
+                geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+                geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+                geo.computeVertexNormals();
+                const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true;
+                return m;
+            }
+
+            // --- Pass 1: Pre-calculate Junctions for Gapless Mesh ---
+            const junctions = [];
+            for (let i = 0; i <= segments; i++) {
+                const iPrev = (i - 1 + segments) % segments;
+                const iCurr = i % segments;
+                const iNext = (i + 1) % segments;
+                
+                const pPrev = points[iPrev], pCurr = points[iCurr], pNext = points[iNext];
+                const v0 = new THREE.Vector2(pCurr.x - pPrev.x, pCurr.z - pPrev.z).normalize();
+                const v1 = new THREE.Vector2(pNext.x - pCurr.x, pNext.z - pCurr.z).normalize();
+                const avgDir = v0.clone().add(v1).normalize();
+                const nx = avgDir.y, nz = -avgDir.x; 
+                
+                const yaw0 = Math.atan2(v0.x, v0.y), yaw1 = Math.atan2(v1.x, v1.y);
+                let aDiff = Math.abs(yaw1 - yaw0);
+                if (aDiff > Math.PI) aDiff = Math.PI * 2 - aDiff;
+                let w = roadWidth + (aDiff * 150); if (w > 55) w = 55;
+
+                junctions.push({
+                    p: pCurr, nx: nx, nz: nz, w: w,
+                    lp: new THREE.Vector3(pCurr.x + nx * w / 2, 0, pCurr.z + nz * w / 2),
+                    rp: new THREE.Vector3(pCurr.x - nx * w / 2, 0, pCurr.z - nz * w / 2)
+                });
+            }
+
+            // --- Pass 2: Build Track ---
             for (let i = 0; i < segments; i++) {
-                const p0 = i === 0 ? points[segments - 1] : points[i - 1];
-                const p1 = points[i];
-                const p2 = points[i + 1];
+                const j1 = junctions[i];
+                const j2 = junctions[i + 1] || junctions[0];
+                
+                const midX = (j1.p.x + j2.p.x) / 2;
+                const midZ = (j1.p.z + j2.p.z) / 2;
+                const drx = j2.p.x - j1.p.x, drz = j2.p.z - j1.p.z;
+                const dist = Math.sqrt(drx * drx + drz * drz) || 1;
+                const yaw = Math.atan2(drx, drz);
+                const localWidth = (j1.w + j2.w) / 2;
 
-                const dx0 = p1.x - p0.x;
-                const dz0 = p1.z - p0.z;
-                const yaw0 = Math.atan2(dx0, dz0);
+                if (i === 0) { window.trackStartPos = new THREE.Vector3(midX, 1, midZ); window.trackStartYaw = yaw; }
+                trackPoints.push({ x: midX, z: midZ }); trackYaws.push(yaw);
 
-                const dx = p2.x - p1.x;
-                const dz = p2.z - p1.z;
-                const dist = Math.sqrt(dx * dx + dz * dz) || 1;
-                const yaw = Math.atan2(dx, dz);
+                // (A) Gapless Road Segment (Single Quad)
+                const roadGeo = new THREE.BufferGeometry();
+                const rV = [j1.lp.x, 0.1, j1.lp.z, j1.rp.x, 0.1, j1.rp.z, j2.rp.x, 0.1, j2.rp.z, j1.lp.x, 0.1, j1.lp.z, j2.rp.x, 0.1, j2.rp.z, j2.lp.x, 0.1, j2.lp.z];
+                roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(rV, 3));
+                roadGeo.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 1,0, 1,1, 0,0, 1,1, 0,1], 2));
+                roadGeo.computeVertexNormals();
+                const rMesh = new THREE.Mesh(roadGeo, roadMat); rMesh.receiveShadow = true; scene.add(rMesh);
 
-                let angleDiff = Math.abs(yaw - yaw0);
-                if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+                const wallThick = 4.0, wallHeight = 7.0;
+                const wallHalfThick = wallThick/2, wallHalfH = wallHeight/2;
 
-                let localWidth = roadWidth + (angleDiff * 150);
-                if (localWidth > 55) localWidth = 55;
-
-                const midX = (p1.x + p2.x) / 2;
-                const midZ = (p1.z + p2.z) / 2;
-
-                if (i === 0) {
-                    window.trackStartPos = new THREE.Vector3(midX, 1, midZ);
-                    window.trackStartYaw = yaw;
-                }
-
-                // Store track centre + yaw for Q respawn
-                trackPoints.push({ x: midX, z: midZ });
-                trackYaws.push(yaw);
-
-                // Smooth Road Segment
-                const roadGeo = new THREE.BoxGeometry(localWidth, 0.2, dist + 1.5);
-                const roadMesh = new THREE.Mesh(roadGeo, roadMat);
-                roadMesh.position.set(midX, 0.1, midZ);
-                roadMesh.rotation.y = yaw;
-                roadMesh.receiveShadow = true;
-                scene.add(roadMesh);
-
-                // Perpendicular (normal) direction: points left/right of road
-                const nx = Math.cos(yaw);
-                const nz = -Math.sin(yaw);
-
-                const wallThick = 2.5;  // thickness of wall
-                const wallHeight = 6.0; // Taller barriers for world containment
-                const wallHalfThick = wallThick / 2;
-                const wallHalfH = wallHeight / 2;
-                const wallHalfLen = dist / 2 + 1.5; // Increased overlap for gap-less turns
+                const nx_seg = Math.cos(yaw), nz_seg = -Math.sin(yaw);
 
                 for (let side of [1, -1]) {
-                    // Inner face of wall flush with road edge
-                    const wallInnerX = midX + nx * side * (localWidth / 2);
-                    const wallInnerZ = midZ + nz * side * (localWidth / 2);
-                    // Wall centre offset outward by half its thickness
-                    const wallX = wallInnerX + nx * side * wallHalfThick;
-                    const wallZ = wallInnerZ + nz * side * wallHalfThick;
+                    // (B) Skewed/Gapless Wall Visuals
+                    const wMat = (i % 2 === 1) ? oddWallMat : (side === 1 ? evenWallMat : evenWallMatRight);
+                    const wallMesh = createWallSegment(side === 1 ? j1.lp : j1.rp, side === 1 ? j2.lp : j2.rp, j1.nx, j1.nz, j2.nx, j2.nz, side, wallHeight, wallThick, wMat);
+                    scene.add(wallMesh);
 
-                    // Flat wall — odd: "OUTRUN HORIZON", even left: ">", even right: "<"
-                    const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 3.0);
-                    let chosenMat;
-                    if (i % 2 === 1) {
-                        chosenMat = oddWallMat;
-                    } else {
-                        chosenMat = (side === 1) ? evenWallMat : evenWallMatRight;
-                    }
-                    const wMesh = new THREE.Mesh(wGeo, chosenMat);
-                    wMesh.position.set(wallX, wallHalfH, wallZ);
-                    wMesh.rotation.y = yaw;
-                    wMesh.castShadow = true;
-                    wMesh.receiveShadow = true;
-                    scene.add(wMesh);
-
-                    // Neon accent strip on TOP of every 10th wall segment (not inner face)
+                    // Neon Strip
                     if (i % 10 === 0) {
-                        const accentGeo = new THREE.BoxGeometry(wallThick + 0.05, 0.15, dist + 1.5);
-                        const accent = new THREE.Mesh(accentGeo, neonMat);
-                        accent.position.set(wallX, wallHeight + 0.07, wallZ);
-                        accent.rotation.y = yaw;
-                        scene.add(accent);
+                        const accent = new THREE.Mesh(new THREE.BoxGeometry(wallThick + 0.1, 0.2, dist + 0.5), neonMat);
+                        accent.position.set(midX + nx_seg * side * (localWidth/2 + wallHalfThick), wallHeight+0.1, midZ + nz_seg * side * (localWidth/2 + wallHalfThick));
+                        accent.rotation.y = yaw; scene.add(accent);
                     }
 
-                    // Physics wall — snug against road edge
-                    const wallShape = new CANNON.Box(new CANNON.Vec3(wallHalfThick, wallHalfH, wallHalfLen));
+                    // (C) Physics Boundary (Overlapping blocks for robust containment)
                     const wBody = new CANNON.Body({ mass: 0, material: physicsMaterial });
-                    wBody.addShape(wallShape);
-                    wBody.position.set(wallX, wallHalfH, wallZ);
-                    const q = new CANNON.Quaternion();
-                    q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
-                    wBody.quaternion.copy(q);
-                    world.addBody(wBody);
+                    wBody.addShape(new CANNON.Box(new CANNON.Vec3(wallHalfThick, wallHalfH, dist/2 + 2.0)));
+                    wBody.position.set(midX + nx_seg * side * (localWidth/2 + wallHalfThick), wallHalfH, midZ + nz_seg * side * (localWidth/2 + wallHalfThick));
+                    const q = new CANNON.Quaternion(); q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
+                    wBody.quaternion.copy(q); world.addBody(wBody);
 
-                    // FULL FLEDGE CITY FEELING (Buildings, Homes, Trees)
+                    // Scenery logic
                     const rand = Math.random();
-                    // Increased safety buffer (35m) to ensure no clipping on road
                     const offset = localWidth / 2 + 35 + Math.random() * 120;
-                    const objX = midX + nx * side * offset;
-                    const objZ = midZ + nz * side * offset;
+                    const objX = midX + nx_seg * side * offset;
+                    const objZ = midZ + nz_seg * side * offset;
 
                     if (rand < 0.2 && i % 4 === 0) {
-                        // TALL SKYSCRAPER
-                        const h = 40 + Math.random() * 80;
-                        const w = 15 + Math.random() * 15;
+                        const h = 40 + Math.random() * 80; const w = 15 + Math.random() * 15;
                         const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), bMat);
-                        building.position.set(objX, h / 2, objZ);
-                        building.rotation.y = Math.random() * Math.PI;
-                        building.castShadow = true;
-                        building.receiveShadow = true;
-                        scene.add(building);
+                        building.position.set(objX, h / 2, objZ); building.rotation.y = Math.random() * Math.PI;
+                        building.castShadow = true; building.receiveShadow = true; scene.add(building);
                     } else if (rand < 0.4 && i % 3 === 0) {
-                        // INDIVIDUAL HOMES
-                        const houseGroup = new THREE.Group();
-                        const house = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 12), houseMat);
-                        house.position.y = 4;
-                        const roof = new THREE.Mesh(new THREE.ConeGeometry(8, 6, 4), roofMat);
-                        roof.position.y = 11;
-                        roof.rotation.y = Math.PI / 4;
-                        houseGroup.add(house);
-                        houseGroup.add(roof);
-                        houseGroup.position.set(objX, 0, objZ);
-                        houseGroup.rotation.y = Math.random() * Math.PI;
-                        scene.add(houseGroup);
+                        const hG = new THREE.Group(); const house = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 12), houseMat); house.position.y = 4;
+                        const roof = new THREE.Mesh(new THREE.ConeGeometry(8, 6, 4), roofMat); roof.position.y = 11; roof.rotation.y = Math.PI / 4;
+                        hG.add(house); hG.add(roof); hG.position.set(objX, 0, objZ); hG.rotation.y = Math.random() * Math.PI; scene.add(hG);
                     } else if (rand < 0.6 && i % 2 === 0) {
-                        // TREES
-                        const treeGroup = new THREE.Group();
-                        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 5), treeTrunkMat);
-                        trunk.position.y = 2.5;
-                        const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 12, 8), treeLeavesMat);
-                        leaves.position.y = 9;
-                        treeGroup.add(trunk);
-                        treeGroup.add(leaves);
-                        treeGroup.position.set(objX, 0, objZ);
-                        scene.add(treeGroup);
+                        const tG = new THREE.Group(); const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.2, 5), treeTrunkMat); trunk.position.y = 2.5;
+                        const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 12, 8), treeLeavesMat); leaves.position.y = 9;
+                        tG.add(trunk); tG.add(leaves); tG.position.set(objX, 0, objZ); scene.add(tG);
                     }
                 }
             }
