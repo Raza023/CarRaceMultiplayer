@@ -769,9 +769,9 @@
                 const t = (i / segments) * Math.PI * 2;
                 // Straight finish line: no winding for the first 10% and last 10%
                 const progress = i / segments;
-                const windStart = 0.1; 
+                const windStart = 0.1;
                 const windEnd = 0.9;
-                
+
                 let windFactor = 0;
                 if (progress > windStart && progress < windEnd) {
                     // Smoothly taper the winding in and out
@@ -779,10 +779,10 @@
                     else if (progress > windEnd - 0.05) windFactor = (windEnd - progress) / 0.05;
                     else windFactor = 1.0;
                 }
-                
+
                 const noise = windFactor * (
-                    Math.sin(t * 7.5) * 110 + 
-                    Math.cos(t * 13.2) * 60 + 
+                    Math.sin(t * 7.5) * 110 +
+                    Math.cos(t * 13.2) * 60 +
                     Math.sin(t * 26.8) * 30 +
                     Math.cos(t * 3.4) * 35
                 );
@@ -837,10 +837,10 @@
                 const nz = -Math.sin(yaw);
 
                 const wallThick = 2.5;  // thickness of wall
-                const wallHeight = 3.0;
+                const wallHeight = 6.0; // Taller barriers for world containment
                 const wallHalfThick = wallThick / 2;
                 const wallHalfH = wallHeight / 2;
-                const wallHalfLen = dist / 2 + 0.75;
+                const wallHalfLen = dist / 2 + 1.5; // Increased overlap for gap-less turns
 
                 for (let side of [1, -1]) {
                     // Inner face of wall flush with road edge
@@ -851,7 +851,7 @@
                     const wallZ = wallInnerZ + nz * side * wallHalfThick;
 
                     // Flat wall — odd: "OUTRUN HORIZON", even left: ">", even right: "<"
-                    const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 1.5);
+                    const wGeo = new THREE.BoxGeometry(wallThick, wallHeight, dist + 3.0);
                     let chosenMat;
                     if (i % 2 === 1) {
                         chosenMat = oddWallMat;
