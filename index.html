@@ -440,6 +440,7 @@
             A / Left Arrow : Steer Left<br>
             D / Right Arrow : Steer Right<br>
             Space : Handbrake<br>
+            Shift : Nitro Boost<br>
             Q : Respawn on Road
         </div>
 
@@ -447,6 +448,10 @@
         <div id="race-hud" style="display: none;">
             <div id="lap-counter">LAP 0 / 3</div>
             <div id="race-timer">00:00.000</div>
+            <div style="width: 200px; height: 18px; border: 2px solid #00ffff; border-radius: 8px; margin-top: 15px; background: rgba(0,0,0,0.5); box-shadow: 0 0 10px #00ffff; overflow: hidden; transform: skewX(-15deg);">
+                <div id="nitro-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0088ff, #00ffff); box-shadow: 0 0 10px #00ffff;"></div>
+            </div>
+            <div style="color: #00ffff; font-size: 14px; margin-top: 5px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 5px #00ffff;">NITRO (SHIFT)</div>
         </div>
         <div id="countdown-overlay"></div>
         <div id="race-finish-overlay">
@@ -520,7 +525,7 @@
         let hasLeftFinishZone = false;    // car must travel away before lap can count
 
         // Input Map
-        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false, q: false };
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false, ' ': false, q: false, Shift: false };
 
         // Store track centre points and yaw angles for Q respawn
         const trackPoints = [];
@@ -598,11 +603,84 @@
             return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
         }
 
+        const AudioSystem = {
+            ctx: null, engineOsc: null, engineGain: null,
+            init: function() {
+                if(this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.engineOsc = this.ctx.createOscillator();
+                this.engineOsc.type = 'sawtooth';
+                this.engineGain = this.ctx.createGain();
+                this.engineGain.gain.value = 0.05;
+                this.engineOsc.connect(this.engineGain);
+                this.engineGain.connect(this.ctx.destination);
+                this.engineOsc.start();
+            },
+            updateEngine: function(speed) {
+                if(!this.ctx || !this.engineOsc) return;
+                const freq = 50 + (Math.abs(speed) * 0.8);
+                this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.1);
+            },
+            playPickup: function() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playBoost: function() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.8);
+            }
+        };
+
+        const boostBottles = [];
+        function createBoostBottles() {
+            const bottleGeo = new THREE.CylinderGeometry(0.8, 0.8, 3, 16);
+            bottleGeo.rotateX(Math.PI/2);
+            const bottleMat = new THREE.MeshStandardMaterial({
+                color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.5, wireframe: true
+            });
+            for(let i = 0; i < 40; i++) {
+                const segmentIdx = Math.floor(Math.random() * trackPoints.length);
+                const p = trackPoints[segmentIdx];
+                const yaw = trackYaws[segmentIdx];
+                const offset = (Math.random() - 0.5) * 20; // from center
+                const nx = Math.cos(yaw), nz = -Math.sin(yaw);
+                const bx = p.x + nx * offset;
+                const bz = p.z + nz * offset;
+                
+                const mesh = new THREE.Mesh(bottleGeo, bottleMat);
+                mesh.position.set(bx, 1.5, bz);
+                scene.add(mesh);
+                
+                boostBottles.push({ mesh: mesh, active: true, x: bx, z: bz });
+            }
+        }
+
         function init() {
             initGraphics();
             initPhysics();
             createEnvironment();
             createFinishLine();
+            createBoostBottles();
             setupControls();
             initWeather();
             
@@ -1159,6 +1237,7 @@
             document.getElementById('setup-menu').style.display = 'none';
             document.getElementById('race-hud').style.display = 'flex';
             
+            AudioSystem.init();
             spawnCars(playerColor, aiCount);
             startCountdown();
         }
@@ -1490,21 +1569,63 @@
             lastTime = now;
 
             const maxSteerVal = 0.7;   // Sharper turning
-            const maxForce = 10000;      // Faster acceleration
+            let currentMaxForce = 10000;
             const brakeForce = 80;      // Smooth braking
+
+            // Block driving during countdown or post-finish
+            const canDrive = (raceState === 'racing');
+
+            // Handle Nitro
+            let isBoosting = false;
+            let playerTargetCar = cars.length > 0 ? cars[0] : null;
+
+            if (canDrive && keys.Shift && playerTargetCar && (playerTargetCar.nitro || 0) > 0) {
+                isBoosting = true;
+                currentMaxForce = 25000; 
+                playerTargetCar.nitro -= dt * 25; // 4 seconds of nitro
+                if(playerTargetCar.nitro < 0) playerTargetCar.nitro = 0;
+            }
+
+            // Animate FOV
+            if (isBoosting) {
+                if (camera.fov < 80) { camera.fov += dt * 60; camera.updateProjectionMatrix(); }
+            } else {
+                if (camera.fov > 60) { camera.fov -= dt * 60; camera.updateProjectionMatrix(); }
+            }
+
+            // Update Nitro UI
+            if(playerTargetCar) {
+                document.getElementById('nitro-bar').style.width = (playerTargetCar.nitro || 0) + '%';
+            }
+
+            // Boost Bottles Logic
+            for(let b of boostBottles) {
+                if(b.active) {
+                    b.mesh.rotation.y += dt * 3;
+                    b.mesh.rotation.z += dt * 2;
+                    if (playerTargetCar) {
+                        const dx = playerTargetCar.chassisBody.position.x - b.x;
+                        const dz = playerTargetCar.chassisBody.position.z - b.z;
+                        if(dx*dx + dz*dz < 25) { // 5m collision radius
+                            b.active = false;
+                            b.mesh.visible = false;
+                            playerTargetCar.nitro = Math.min((playerTargetCar.nitro || 0) + 50, 100);
+                            AudioSystem.playPickup();
+                            setTimeout(() => { b.active = true; b.mesh.visible = true; }, 10000); // 10s cooldown
+                        }
+                    }
+                }
+            }
 
             let engineForce = 0;
             let brakeValue = 0;
             let steeringValue = 0;
 
-            // Block driving during countdown or post-finish
-            const canDrive = (raceState === 'racing');
-
             if (canDrive && carVehicle) {
                 if (keys.w || keys.ArrowUp) {
-                    engineForce = -maxForce;
+                    engineForce = -currentMaxForce;
                 } else if (keys.s || keys.ArrowDown) {
-                    engineForce = maxForce / 2;
+                    engineForce = currentMaxForce / 2;
                 }
                 if (keys[' ']) {
                     brakeValue = brakeForce;
@@ -1569,7 +1690,16 @@
                     const steerAI = Math.max(-maxSteerVal, Math.min(maxSteerVal, diff * 1.5));
                     
                     const speedAI = c.chassisBody.velocity.length();
-                    let forceAI = -maxForce * 0.90; // AI is slightly slower
+                    // AI tries to use nitro if they have it and no tight turns
+                    if(c.nitro === undefined) c.nitro = 0;
+                    let currentAIMaxForce = 10000;
+                    if(Math.abs(diff) < 0.1 && c.nitro > 0 && speedAI > 10) {
+                        currentAIMaxForce = 21000;
+                        c.nitro -= dt * 25;
+                    }
+                    if(c.nitro < 0) c.nitro = 0;
+                    
+                    let forceAI = -currentAIMaxForce * 0.95; // AI is slightly slower
                     let brakeAI = 0;
                     
                     if (Math.abs(diff) > 0.4 && speedAI > 30) {
@@ -1580,7 +1710,7 @@
                     if (speedAI < 2 && raceState === 'racing') {
                         c.stuckTime += dt;
                         if (c.stuckTime > 1.0) {
-                           forceAI = maxForce; // Reverse
+                           forceAI = currentAIMaxForce; // Reverse
                         }
                         if (c.stuckTime > 2.5) { // Respawn
                             c.chassisBody.position.set(tx, 1.5, tz);
@@ -1649,6 +1779,14 @@
                 const finalSpeed = speed * direction;
                 if (uiSpeedValue.innerText != finalSpeed) {
                     uiSpeedValue.innerText = finalSpeed;
+                }
+                
+                AudioSystem.updateEngine(finalSpeed);
+                
+                // Extra shake if boosting
+                if(isBoosting && finalSpeed > 50) {
+                   camera.position.x += (Math.random() - 0.5) * 0.15;
+                   camera.position.y += (Math.random() - 0.5) * 0.15;
                 }
             }
 
