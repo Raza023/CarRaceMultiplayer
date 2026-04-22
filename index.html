@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photorealistic 3D Racing</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
@@ -405,86 +405,6 @@
             background: rgba(255, 100, 50, 0.5);
             transform: scale(1.05);
         }
-
-        /* ===== MOBILE TOUCH CONTROLS ===== */
-        .touch-container {
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            width: 100%;
-            height: 220px;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 40px;
-            box-sizing: border-box;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        /* Detect touch capability via media query */
-        @media (pointer: coarse) {
-            .touch-container { display: flex; }
-            #controls-help { display: none; }
-        }
-
-        /* Fallback: hide if not touch */
-        @media (pointer: fine) {
-            .touch-container { display: none; }
-        }
-
-        .touch-group {
-            display: flex;
-            gap: 20px;
-            align-items: flex-end;
-            pointer-events: auto;
-        }
-
-        .touch-btn {
-            width: 85px;
-            height: 85px;
-            background: rgba(10, 15, 30, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 24px;
-            font-weight: 900;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            transition: all 0.1s ease;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
-
-        .touch-btn:active {
-            transform: scale(0.9);
-            background: rgba(255, 100, 50, 0.4);
-            border-color: #ff8800;
-            box-shadow: 0 0 30px rgba(255, 136, 0, 0.6);
-        }
-
-        .touch-btn.steering { width: 100px; height: 100px; background: rgba(0, 242, 255, 0.1); border-color: rgba(0, 242, 255, 0.3); }
-        .touch-btn.steering:active { background: rgba(0, 242, 255, 0.3); border-color: #00f2ff; box-shadow: 0 0 30px rgba(0, 242, 255, 0.6); }
-
-        .touch-btn.gas { width: 110px; height: 110px; background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.3); font-size: 32px; }
-        .touch-btn.gas:active { background: rgba(0, 255, 136, 0.3); border-color: #00ff88; box-shadow: 0 0 30px rgba(0, 255, 136, 0.6); }
-
-        .touch-btn.boost { 
-            position: absolute;
-            bottom: 140px;
-            right: 50px;
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 0, 255, 0.1);
-            border-color: rgba(255, 0, 255, 0.3);
-            font-size: 16px;
-        }
-        .touch-btn.boost:active { background: rgba(255, 0, 255, 0.3); border-color: #ff00ff; box-shadow: 0 0 30px rgba(255, 0, 255, 0.6); }
-
-        .touch-btn svg { width: 40px; height: 40px; fill: currentColor; }
     </style>
 </head>
 
@@ -522,27 +442,6 @@
             Space : Handbrake<br>
             Shift : Nitro Boost<br>
             Q : Respawn on Road
-        </div>
-
-        <!-- NEW TOUCH CONTROLS OVERLAY -->
-        <div class="touch-container">
-            <div class="touch-group">
-                <div id="touch-left" class="touch-btn steering">
-                    <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                </div>
-                <div id="touch-right" class="touch-btn steering">
-                    <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-                </div>
-            </div>
-            <div class="touch-group">
-                <div id="touch-brake" class="touch-btn brake">
-                    <span style="font-size: 14px;">BRAKE</span>
-                </div>
-                <div id="touch-gas" class="touch-btn gas">
-                    <svg viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg>
-                </div>
-            </div>
-            <div id="touch-boost" class="touch-btn boost">BOOST</div>
         </div>
 
         <!-- RACE MODE HUD -->
@@ -1629,47 +1528,27 @@
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
             });
 
-            // --- TOUCH CONTROLS LOGIC ---
-            const bindTouch = (id, key) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                
-                const start = (e) => { e.preventDefault(); keys[key] = true; };
-                const end = (e) => { e.preventDefault(); keys[key] = false; };
-                
-                el.addEventListener('touchstart', start, { passive: false });
-                el.addEventListener('touchend', end, { passive: false });
-                el.addEventListener('touchcancel', end, { passive: false });
-            };
-
-            bindTouch('touch-left', 'a');
-            bindTouch('touch-right', 'd');
-            bindTouch('touch-gas', 'w');
-            bindTouch('touch-brake', 's');
-            bindTouch('touch-boost', 'Shift');
-
-            // --- UI BUTTONS ---
+            // RACE AGAIN button
             document.getElementById('restart-race-btn').addEventListener('click', restartRace);
+
+            // START SETUP
             document.getElementById('start-btn').addEventListener('click', startGameFromSetup);
 
+            // Respawn button — unflip only (lifts car upright at current position)
             document.getElementById('respawn-btn').addEventListener('click', () => {
                 if (!carChassisBody) return;
                 const currentPos = carChassisBody.position;
                 carChassisBody.position.set(currentPos.x, 3, currentPos.z);
+
                 const euler = new THREE.Euler().setFromQuaternion(
                     new THREE.Quaternion(carChassisBody.quaternion.x, carChassisBody.quaternion.y, carChassisBody.quaternion.z, carChassisBody.quaternion.w)
                 );
                 const q = new CANNON.Quaternion();
                 q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), euler.y);
                 carChassisBody.quaternion.copy(q);
+
                 carChassisBody.velocity.set(0, 0, 0);
                 carChassisBody.angularVelocity.set(0, 0, 0);
-            });
-
-            // Force touch UI if touch is detected (fallback for media query)
-            window.addEventListener('touchstart', function onFirstTouch() {
-                document.querySelector('.touch-container').style.display = 'flex';
-                window.removeEventListener('touchstart', onFirstTouch);
             });
         }
 
