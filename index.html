@@ -405,6 +405,122 @@
             background: rgba(255, 100, 50, 0.5);
             transform: scale(1.05);
         }
+
+        /* ===== MOBILE STYLES ===== */
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 180px;
+            pointer-events: none;
+            z-index: 150;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+        }
+
+        .side-controls {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: #fff;
+            font-weight: 900;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            touch-action: none;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            background: rgba(255, 100, 50, 0.4);
+            border-color: #ff6432;
+            transform: scale(0.9);
+        }
+
+        .control-btn.boost {
+            background: rgba(0, 242, 255, 0.1);
+            border-color: rgba(0, 242, 255, 0.4);
+            width: 70px;
+            height: 70px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn.boost:active {
+            background: rgba(0, 242, 255, 0.4);
+        }
+
+        #landscape-prompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050510;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #landscape-prompt h2 {
+            font-size: 24px;
+            color: #ff6432;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            #mobile-controls { display: flex; }
+            #controls-help { display: none; }
+            #respawn-btn { 
+                top: auto; bottom: 30px; left: 50%; 
+                transform: translateX(-50%); 
+                width: 60px; height: 60px;
+                background: rgba(255, 50, 50, 0.4);
+            }
+            
+            #full-map-container {
+                width: 130px; height: 130px;
+                top: 10px; left: 10px;
+                border-width: 3px;
+                box-shadow: 0 0 30px rgba(0, 242, 255, 0.8);
+            }
+            #minimap-container {
+                width: 130px; height: 130px;
+                top: 10px; right: 10px;
+                border-width: 3px;
+                box-shadow: 0 0 30px rgba(255, 0, 85, 0.8);
+            }
+            .map-label { display: none; } /* Hide labels on mobile to save space */
+            #speedometer { 
+                bottom: auto; top: 10px; right: auto; 
+                left: 50%; transform: translateX(-50%) scale(0.6); 
+                background: rgba(10, 15, 30, 0.8);
+            }
+            #top-bar h1 { font-size: 20px; }
+            #top-bar { top: 70px; }
+        }
+
+
+        @media screen and (orientation: portrait) and (max-width: 1024px) {
+            #landscape-prompt { display: flex; }
+        }
+
     </style>
 </head>
 
@@ -453,6 +569,36 @@
             </div>
             <div style="color: #00ffff; font-size: 14px; margin-top: 5px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 5px #00ffff;">NITRO (SHIFT)</div>
         </div>
+
+        <div id="mobile-controls">
+            <div class="side-controls">
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <button id="touch-left" class="control-btn">LEFT</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <button id="touch-right" class="control-btn">RIGHT</button>
+                </div>
+            </div>
+            <div class="side-controls">
+                <div style="display: flex; flex-direction: column-reverse; gap: 10px; align-items: center;">
+                    <button id="touch-accel" class="control-btn">GAS</button>
+                    <button id="touch-boost" class="control-btn boost">BOOST</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <button id="touch-brake" class="control-btn">BRAKE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="landscape-prompt">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ff6432" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" transform="rotate(90 12 10)"></rect>
+                <line x1="12" y1="15" x2="12" y2="15"></line>
+            </svg>
+            <h2>PLEASE ROTATE TO LANDSCAPE</h2>
+            <p>For the best racing experience</p>
+        </div>
+
         <div id="countdown-overlay"></div>
         <div id="race-finish-overlay">
             <h2>RACE COMPLETE!</h2>
@@ -1528,6 +1674,25 @@
                 if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
             });
 
+            // Mobile Touch Controls
+            const touchMap = {
+                'touch-left': 'a',
+                'touch-right': 'd',
+                'touch-accel': 'w',
+                'touch-brake': 's',
+                'touch-boost': 'Shift'
+            };
+
+            Object.entries(touchMap).forEach(([id, key]) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; }, {passive: false});
+                    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+                    el.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+                }
+            });
+
+
             // RACE AGAIN button
             document.getElementById('restart-race-btn').addEventListener('click', restartRace);
 
@@ -1870,22 +2035,25 @@
             renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
             renderer.render(scene, camera);
 
-            const margin = 30;
+            // Viewport responsive dimensions
+            const isMobile = window.innerWidth <= 1024;
+            const margin = isMobile ? 10 : 30;
+            const fSize = isMobile ? 130 : 260;
+            const mSizeValue = isMobile ? 130 : 240;
 
             // 2. Full Map (Top Left - Tactical Overview)
             fullMapCamera.layers.set(2); // CAR DOT (Layer 2)
             fullMapCamera.layers.enable(1); // TRACK PATH (Layer 1)
-            const fSize = 260;
             renderer.setViewport(margin, window.innerHeight - fSize - margin, fSize, fSize);
             renderer.setScissor(margin, window.innerHeight - fSize - margin, fSize, fSize);
             renderer.render(scene, fullMapCamera);
 
             // 3. Minimap (Top Right - Close Radar)
             minimapCamera.layers.set(1); // ARROW + PATH 
-            const mSizeValue = 240;
             renderer.setViewport(window.innerWidth - mSizeValue - margin, window.innerHeight - mSizeValue - margin, mSizeValue, mSizeValue);
             renderer.setScissor(window.innerWidth - mSizeValue - margin, window.innerHeight - mSizeValue - margin, mSizeValue, mSizeValue);
             renderer.render(scene, minimapCamera);
+
 
             renderer.setScissorTest(false);
         }
